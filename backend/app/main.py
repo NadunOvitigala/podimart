@@ -87,7 +87,7 @@ def create_app() -> FastAPI:
         if _store.get_seller_by_email(email):
             raise HTTPException(status_code=400, detail="That email already has a shop.")
         if body.city not in CITIES:
-            raise HTTPException(status_code=400, detail="Please pick a city from the list.")
+            raise HTTPException(status_code=400, detail="Please pick a province from the list.")
         seller = {
             "id": new_id(),
             "email": email,
@@ -133,7 +133,7 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=401, detail="Please log in.")
         updates = body.model_dump(exclude_unset=True)
         if "city" in updates and updates["city"] not in CITIES:
-            raise HTTPException(status_code=400, detail="Please pick a city from the list.")
+            raise HTTPException(status_code=400, detail="Please pick a province from the list.")
         if "name" in updates and updates["name"]:
             updates["name"] = updates["name"].strip()
         seller.update({k: v for k, v in updates.items() if v is not None})

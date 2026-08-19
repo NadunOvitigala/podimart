@@ -48,6 +48,7 @@ class ProfileIn(BaseModel):
 class ProductIn(BaseModel):
     name: str = Field(min_length=2, max_length=80)
     category: str
+    subcategory: str = Field(default="", max_length=80)
     price: int = Field(ge=0, le=10_000_000)
     description: str = Field(default="", max_length=800)
     lead_time: str = Field(default="Order 2 days before", max_length=80)

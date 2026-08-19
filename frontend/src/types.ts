@@ -3,6 +3,7 @@ export type Category = {
   name: string;
   blurb: string;
   image: string;
+  subcategories?: { id: string; name: string }[];
 };
 
 export type Seller = {
@@ -32,5 +33,7 @@ export type Product = {
   price: number;
   lead_time: string;
   image_url: string;
+  image_urls?: string[];
+  code?: string;
   created_at: string;
 };

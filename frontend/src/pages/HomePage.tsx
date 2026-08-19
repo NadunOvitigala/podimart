@@ -22,8 +22,7 @@ export function HomePage() {
     <div className="wrap">
       <section className="hero">
         <div>
-          <p className="chip">Free for makers and buyers</p>
-          <h1>A shop page for home businesses.</h1>
+          <h1>Marketplace for home businesses</h1>
           <p className="lede">
             Home bakers, painters, and crafters list their work for free.
             Buyers pick a category and city, then order on WhatsApp, call, or
@@ -31,15 +30,29 @@ export function HomePage() {
           </p>
           <div className="hero-actions">
             <Link className="btn btn-clay" to="/browse">
-              Find homemade goods
+              Marketplace
             </Link>
-            <a className="btn btn-ghost" href={`${SELLERCENTER_URL}/signup`}>
+            <a className="btn btn-outline" href={`${SELLERCENTER_URL}/signup`}>
               Open a free shop
             </a>
           </div>
+          <ul className="points">
+            <li>
+              <img src="/images/badge-verified.png" alt="" />
+              Free listings. Contact makers directly.
+            </li>
+            <li>
+              <img src="/images/badge-verified.png" alt="" />
+              Browse by category and city.
+            </li>
+            <li>
+              <img src="/images/badge-verified.png" alt="" />
+              Order on WhatsApp, call, or email.
+            </li>
+          </ul>
         </div>
         <div className="hero-photo">
-          <img src="/images/hero-homemade.png" alt="Homemade cakes and crafts on a kitchen table" />
+          <img src="/images/hero-marketplace.png" alt="Homemade cakes, crafts, flowers, and gifts on a market table" />
         </div>
       </section>
 
@@ -47,7 +60,9 @@ export function HomePage() {
 
       <div className="section-head">
         <h2>Shop by category</h2>
-        <Link to="/browse">See all</Link>
+        <Link className="text-link" to="/browse">
+          See all
+        </Link>
       </div>
       <div className="grid grid-3">
         {categories.map((category) => (

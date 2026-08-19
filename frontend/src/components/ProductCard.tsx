@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { formatPrice, mediaUrl } from "../api";
+import { formatPrice, mediaUrl, productCode } from "../api";
 import type { Product } from "../types";
 
 export function ProductCard({ product }: { product: Product }) {
@@ -9,6 +9,9 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="card-body">
         <span className="chip">{product.city}</span>
         <h3>{product.name}</h3>
+        <p className="muted" style={{ margin: "0 0 4px" }}>
+          Product ID: {productCode(product)}
+        </p>
         <p className="muted" style={{ margin: "0 0 8px" }}>
           {product.seller_name}
         </p>

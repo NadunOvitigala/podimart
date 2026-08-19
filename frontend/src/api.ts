@@ -52,6 +52,11 @@ export function formatPrice(value: number): string {
   return `Rs ${Number(value || 0).toLocaleString("en-LK")}`;
 }
 
+export function productCode(product: { id: string; code?: string }): string {
+  if (product.code?.trim()) return product.code.trim().toUpperCase();
+  return product.id ? `PM-${product.id.slice(0, 6).toUpperCase()}` : "";
+}
+
 export function whatsappLink(raw: string, message: string): string {
   let digits = raw.replace(/\D/g, "");
   if (digits.startsWith("0")) digits = `94${digits.slice(1)}`;

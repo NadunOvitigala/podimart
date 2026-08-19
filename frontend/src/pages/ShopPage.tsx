@@ -30,33 +30,48 @@ export function ShopPage() {
   }
   if (!seller) return <div className="wrap" style={{ paddingTop: 40 }}>Loading shop…</div>;
 
+  const coverUrl = mediaUrl(seller.avatar_url);
+  const identity = (
+    <>
+      <span className="chip">{seller.city}</span>
+      <h1>{seller.name}</h1>
+      {seller.bio ? <p className="lede">{seller.bio}</p> : null}
+      <ContactActions seller={seller} variant="cover" />
+    </>
+  );
+
   return (
-    <div className="wrap">
-      <section className="shop-hero">
-        <div>
-          <span className="chip">{seller.city}</span>
-          <h1>{seller.name}</h1>
-          <p className="lede">{seller.bio || "A home business on Podimart."}</p>
-          {seller.pickup_notes ? <p>Pickup: {seller.pickup_notes}</p> : null}
-          {seller.delivery_notes ? <p>Delivery: {seller.delivery_notes}</p> : null}
+    <>
+      {coverUrl ? (
+        <section
+          className="shop-cover has-photo"
+          style={{ backgroundImage: `url(${coverUrl})` }}
+        >
+          <div className="shop-cover-inner">
+            <div className="wrap shop-cover-copy">{identity}</div>
+          </div>
+        </section>
+      ) : (
+        <div className="wrap" style={{ paddingTop: 36 }}>
+          {identity}
         </div>
-        <div className="panel">
-          <img
-            src={mediaUrl(seller.avatar_url)}
-            alt=""
-            style={{ borderRadius: 12, height: 160, width: "100%", objectFit: "cover", marginBottom: 12 }}
-          />
-          <ContactActions seller={seller} />
+      )}
+      <div className="wrap">
+        {seller.pickup_notes || seller.delivery_notes ? (
+          <section className="shop-notes">
+            {seller.pickup_notes ? <p>Pickup: {seller.pickup_notes}</p> : null}
+            {seller.delivery_notes ? <p>Delivery: {seller.delivery_notes}</p> : null}
+          </section>
+        ) : null}
+        <div className="section-head">
+          <h2>Products</h2>
         </div>
-      </section>
-      <div className="section-head">
-        <h2>Products</h2>
+        <div className="grid grid-3">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
       </div>
-      <div className="grid grid-3">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
-    </div>
+    </>
   );
 }
