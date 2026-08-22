@@ -3,29 +3,36 @@ import { SELLERCENTER_URL } from "../sites";
 
 export function AboutPage() {
   return (
-    <div className="wrap" style={{ maxWidth: 720, paddingTop: 40, paddingBottom: 48 }}>
-      <h1>About us</h1>
+    <div className="wrap page-top page-narrow">
+      <h1>About podimart.lk</h1>
       <p className="lede">
-        Podimart helps home businesses in Sri Lanka open a shop, list cakes and crafts, and
-        reach buyers — without building a website.
+        We help home businesses in Sri Lanka reach buyers without building a website.
+        Makers list for free. Buyers browse and contact sellers directly.
       </p>
-      <div className="panel form" style={{ marginTop: 24 }}>
-        <h2>Marketplace</h2>
+
+      <div className="panel">
+        <h2>For buyers</h2>
         <p>
-          This is where buyers browse homemade goods by category and city, then contact the
-          maker on WhatsApp, call, or email.
-        </p>
-        <p>
-          Makers run their shop in{" "}
-          <a className="text-link" href={SELLERCENTER_URL}>
-            Seller Center
-          </a>
-          . Podimart does not take the sale.
+          Browse homemade cakes, crafts, food, flowers, and gifts by category and province.
+          When you find something you like, contact the maker on WhatsApp, call, or email.
         </p>
         <p>
           <Link className="btn btn-clay" to="/browse">
-            Browse homemade goods
+            Browse marketplace
           </Link>
+        </p>
+      </div>
+
+      <div className="panel" style={{ marginTop: 18 }}>
+        <h2>For makers</h2>
+        <p>
+          Open a free shop on Seller Center, add photos and prices, and appear on the
+          marketplace. You keep every sale — podimart.lk does not take payment.
+        </p>
+        <p>
+          <a className="btn btn-outline" href={`${SELLERCENTER_URL}/signup`}>
+            Open a free shop
+          </a>
         </p>
       </div>
     </div>

@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "../api";
+import { EmptyState } from "../components/EmptyState";
+import { LoadingGrid } from "../components/LoadingGrid";
 import { ProductCard } from "../components/ProductCard";
 import type { Category, Product } from "../types";
 
@@ -30,15 +32,11 @@ export function BrowsePage() {
   const query = params.get("q") || "";
   const minPrice = params.get("min") || "";
   const maxPrice = params.get("max") || "";
-  const [draft, setDraft] = useState(query);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    setDraft(query);
-  }, [query]);
 
   useEffect(() => {
     api.categories().then(setCategories).catch(() => undefined);
@@ -46,11 +44,13 @@ export function BrowsePage() {
   }, []);
 
   useEffect(() => {
+    setLoading(true);
     setError("");
     api
       .products({ category: category || undefined, city: city || undefined })
       .then(setProducts)
-      .catch((err: Error) => setError(err.message));
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
   }, [category, city]);
 
   const visible = useMemo(() => {
@@ -71,8 +71,9 @@ export function BrowsePage() {
         if (!hay.includes(needle)) return false;
       }
       const price = Number(product.price || 0);
-      if (min != null && !Number.isNaN(min) && price < min) return false;
-      if (max != null && !Number.isNaN(max) && price > max) return false;
+      if (min != null && !Number.isNaN(min) && price > 0 && price < min) return false;
+      if (max != null && !Number.isNaN(max) && price > 0 && price > max) return false;
+      if (min != null && !Number.isNaN(min) && min > 0 && price === 0) return false;
       return true;
     });
   }, [products, query, minPrice, maxPrice]);
@@ -80,11 +81,13 @@ export function BrowsePage() {
   const title = useMemo(() => {
     const cat = categories.find((c) => c.id === category);
     if (query) return `Results for “${query}”`;
-    if (cat && city) return `${cat.name} in ${city}`;
+    if (cat && city) return `${cat.name} · ${city}`;
     if (cat) return cat.name;
     if (city) return `Makers in ${city}`;
     return "Marketplace";
   }, [categories, category, city, query]);
+
+  const hasFilters = Boolean(category || city || query || minPrice || maxPrice);
 
   function update(next: Record<string, string | undefined>) {
     const merged = new URLSearchParams(params);
@@ -103,9 +106,8 @@ export function BrowsePage() {
     setParams(merged);
   }
 
-  function onSearch(event: FormEvent) {
-    event.preventDefault();
-    update({ q: draft.trim() });
+  function clearFilters() {
+    setParams({});
   }
 
   function onPriceRange(id: string) {
@@ -122,101 +124,69 @@ export function BrowsePage() {
   }
 
   return (
-    <div className="wrap" style={{ paddingTop: 28 }}>
-      <h1>{title}</h1>
-      <p className="lede">
-        Search listings, then narrow by category, province, and price.
-      </p>
+    <div className="wrap mall page-top">
+      <div className="mall-section browse-head">
+        <h1>{title}</h1>
+        <p className="muted results-count">
+          {loading ? "Loading listings…" : `${visible.length} listing${visible.length === 1 ? "" : "s"}`}
+        </p>
+      </div>
 
-      <form className="search-bar" onSubmit={onSearch} role="search">
-        <label className="search-field">
-          <span className="search-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-              <path d="M20 20L16.5 16.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </span>
-          <input
-            type="search"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Search cakes, crafts, shops, or a province"
-            aria-label="Search marketplace"
-          />
-        </label>
-        <button className="btn btn-clay" type="submit">
-          Search
-        </button>
-      </form>
-
-      <div className="filters">
-        <label className="filter-field">
-          Category
-          <select value={category} onChange={(e) => update({ category: e.target.value })}>
-            <option value="">All categories</option>
-            {categories.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="filter-field">
-          Province
-          <select value={city} onChange={(e) => update({ city: e.target.value })}>
-            <option value="">All provinces</option>
-            {cities.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="filter-field">
-          Price
-          <select value={rangeId(minPrice, maxPrice)} onChange={(e) => onPriceRange(e.target.value)}>
-            {PRICE_RANGES.map((item) => (
-              <option key={item.id || "any"} value={item.id}>
-                {item.label}
-              </option>
-            ))}
-            {rangeId(minPrice, maxPrice) === "custom" ? (
-              <option value="custom">Custom range</option>
-            ) : null}
-          </select>
-        </label>
-        <label className="filter-field filter-price">
-          Min (Rs)
-          <input
-            type="number"
-            min={0}
-            inputMode="numeric"
-            placeholder="0"
-            value={minPrice}
-            onChange={(e) => update({ min: e.target.value })}
-          />
-        </label>
-        <label className="filter-field filter-price">
-          Max (Rs)
-          <input
-            type="number"
-            min={0}
-            inputMode="numeric"
-            placeholder="Any"
-            value={maxPrice}
-            onChange={(e) => update({ max: e.target.value })}
-          />
-        </label>
+      <div className="mall-section browse-toolbar">
+        <div className="filters">
+          <label className="filter-field">
+            Category
+            <select value={category} onChange={(e) => update({ category: e.target.value })}>
+              <option value="">All categories</option>
+              {categories.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="filter-field">
+            Province
+            <select value={city} onChange={(e) => update({ city: e.target.value })}>
+              <option value="">All provinces</option>
+              {cities.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="filter-field">
+            Price
+            <select value={rangeId(minPrice, maxPrice)} onChange={(e) => onPriceRange(e.target.value)}>
+              {PRICE_RANGES.map((item) => (
+                <option key={item.id || "any"} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {hasFilters ? (
+            <button className="btn btn-outline filter-clear" type="button" onClick={clearFilters}>
+              Clear filters
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {error ? <p className="error">{error}</p> : null}
-      <p className="muted" style={{ margin: "0 0 16px" }}>
-        {visible.length} listing{visible.length === 1 ? "" : "s"}
-      </p>
-      {visible.length === 0 ? (
-        <div className="empty">No listings match this search. Try another word or price.</div>
+
+      {loading ? (
+        <LoadingGrid count={12} />
+      ) : visible.length === 0 ? (
+        <EmptyState
+          title="No listings found"
+          text="Try a different category, province, or search term."
+          actionLabel="Browse all listings"
+          actionTo="/browse"
+        />
       ) : (
-        <div className="grid grid-4">
+        <div className="grid grid-mall">
           {visible.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

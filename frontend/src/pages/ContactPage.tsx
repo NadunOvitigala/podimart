@@ -10,29 +10,31 @@ export function ContactPage() {
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     const body = encodeURIComponent(`From: ${name}\n${email}\n\n${message}`);
-    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Podimart enquiry")}&body=${body}`;
+    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("podimart.lk enquiry")}&body=${body}`;
   }
 
   return (
-    <div className="wrap" style={{ maxWidth: 640, paddingTop: 40, paddingBottom: 48 }}>
+    <div className="wrap page-top page-narrow">
       <h1>Contact us</h1>
       <p className="lede">
-        Questions about a listing, an order, or Podimart? Send us a message.
+        Questions about the marketplace, a listing, or opening a shop? We are happy to help.
       </p>
-      <div className="panel form" style={{ marginTop: 24 }}>
-        <p>
+
+      <div className="panel form">
+        <p className="muted">
           Email{" "}
           <a className="text-link" href={`mailto:${CONTACT_EMAIL}`}>
             {CONTACT_EMAIL}
-          </a>
+          </a>{" "}
+          or use the form below.
         </p>
         <form className="form" onSubmit={onSubmit}>
           <label>
-            Name
+            Your name
             <input value={name} onChange={(e) => setName(e.target.value)} required />
           </label>
           <label>
-            Email
+            Email address
             <input
               type="email"
               value={email}
@@ -45,11 +47,12 @@ export function ContactPage() {
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
+              placeholder="How can we help?"
               required
             />
           </label>
           <button className="btn btn-clay" type="submit">
-            Send message
+            Send email
           </button>
         </form>
       </div>

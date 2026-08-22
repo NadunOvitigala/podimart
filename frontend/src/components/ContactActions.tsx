@@ -12,15 +12,16 @@ export function ContactActions({
   variant?: "panel" | "cover";
 }) {
   const code = product ? productCode(product) : "";
-  const item = product ? `${product.name} (Product ID ${code})` : "your work";
+  const item = product ? `${product.name} (Ref ${code})` : "your shop";
   const message = product
-    ? `Hi ${seller.name}, I want to order Product ID ${code} (${product.name}) from Podimart. Is it available?`
-    : `Hi ${seller.name}, I saw your work on Podimart. Is it available?`;
-  const mail = `mailto:${seller.email_public}?subject=${encodeURIComponent(`Podimart order: ${item}`)}&body=${encodeURIComponent(message)}`;
+    ? `Hi ${seller.name}, I would like to order ${product.name} (Ref ${code}) from podimart.lk. Is it available?`
+    : `Hi ${seller.name}, I found your shop on podimart.lk and would like to enquire.`;
+  const mail = `mailto:${seller.email_public}?subject=${encodeURIComponent(`podimart.lk — ${item}`)}&body=${encodeURIComponent(message)}`;
   const onCover = variant === "cover";
 
   return (
     <div className={onCover ? "contact-cover" : "contact-row"}>
+      {!onCover ? <h3 className="contact-title">Contact the seller</h3> : null}
       <div className="contact-actions">
         {seller.whatsapp ? (
           <a
@@ -34,7 +35,7 @@ export function ContactActions({
         ) : null}
         {seller.phone ? (
           <a className={onCover ? "btn contact-ghost" : "btn btn-outline"} href={`tel:${seller.phone}`}>
-            Call {seller.phone}
+            Call
           </a>
         ) : null}
         {seller.email_public ? (
@@ -44,17 +45,12 @@ export function ContactActions({
         ) : null}
       </div>
       {onCover ? (
-        <p className="contact-meta">WhatsApp · Call · Email — you contact the maker directly</p>
+        <p className="contact-meta">Free to contact · You pay the maker directly</p>
       ) : (
-        <>
-          <p className="notice">
-            Podimart is free. You contact the maker directly — we do not take
-            payment on this site.
-          </p>
-          <Link className="text-link" to={`/shop/${seller.slug}`}>
-            View {seller.name}
-          </Link>
-        </>
+        <p className="notice">
+          podimart.lk connects buyers and home businesses. We do not process orders or
+          payments on this site.
+        </p>
       )}
     </div>
   );

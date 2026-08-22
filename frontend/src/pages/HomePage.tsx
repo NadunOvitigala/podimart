@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api, mediaUrl } from "../api";
+import { api, displayPrice, mediaUrl } from "../api";
+import { HowItWorks } from "../components/HowItWorks";
 import { ProductCard } from "../components/ProductCard";
 import { SELLERCENTER_URL } from "../sites";
 import type { Category, Product } from "../types";
@@ -8,87 +9,139 @@ import type { Category, Product } from "../types";
 export function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    api.categories().then(setCategories).catch((err: Error) => setError(err.message));
-    api
-      .products()
-      .then((items) => setProducts(items.slice(0, 8)))
-      .catch((err: Error) => setError(err.message));
+    setLoading(true);
+    Promise.all([api.categories(), api.products()])
+      .then(([cats, items]) => {
+        setCategories(cats);
+        setProducts(items);
+      })
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
+  const featured = products.slice(0, 8);
+  const more = products.slice(8, 20);
+
   return (
-    <div className="wrap">
-      <section className="hero">
-        <div>
-          <h1>Marketplace for home businesses</h1>
+    <div className="wrap mall">
+      <section className="promo-banner">
+        <div className="promo-copy">
+          <p className="eyebrow">Sri Lanka · Home businesses</p>
+          <h1>Homemade goods from local makers</h1>
           <p className="lede">
-            Home bakers, painters, and crafters list their work for free.
-            Buyers pick a category and city, then order on WhatsApp, call, or
-            email.
+            Browse cakes, crafts, food, and gifts by category and province, then order
+            directly on WhatsApp.
           </p>
           <div className="hero-actions">
-            <Link className="btn btn-clay" to="/browse">
-              Marketplace
+            <Link className="btn btn-light" to="/browse">
+              Shop now
             </Link>
-            <a className="btn btn-outline" href={`${SELLERCENTER_URL}/signup`}>
+            <a className="btn btn-ghost-light" href={`${SELLERCENTER_URL}/signup`}>
               Open a free shop
             </a>
           </div>
-          <ul className="points">
-            <li>
-              <img src="/images/badge-verified.png" alt="" />
-              Free listings. Contact makers directly.
-            </li>
-            <li>
-              <img src="/images/badge-verified.png" alt="" />
-              Browse by category and city.
-            </li>
-            <li>
-              <img src="/images/badge-verified.png" alt="" />
-              Order on WhatsApp, call, or email.
-            </li>
-          </ul>
         </div>
-        <div className="hero-photo">
-          <img src="/images/hero-marketplace.png" alt="Homemade cakes, crafts, flowers, and gifts on a market table" />
-        </div>
+        <img
+          className="promo-photo"
+          src="/images/hero-marketplace.png"
+          alt="Homemade cakes, crafts, flowers, and gifts"
+        />
       </section>
 
-      {error ? <p className="error">{error}</p> : null}
-
-      <div className="section-head">
-        <h2>Shop by category</h2>
-        <Link className="text-link" to="/browse">
-          See all
-        </Link>
-      </div>
-      <div className="grid grid-3">
-        {categories.map((category) => (
-          <Link className="card" key={category.id} to={`/browse?category=${category.id}`}>
-            <img className="cover" src={mediaUrl(category.image)} alt="" />
-            <div className="card-body">
-              <h3>{category.name}</h3>
-              <p className="muted" style={{ margin: 0 }}>
-                {category.blurb}
-              </p>
-            </div>
+      <section className="mall-section">
+        <div className="section-head">
+          <h2>Categories</h2>
+          <Link className="section-more" to="/browse">
+            Shop all
           </Link>
-        ))}
-      </div>
-
-      {products.length > 0 ? (
-        <>
-          <div className="section-head">
-            <h2>In the market now</h2>
+        </div>
+        {loading ? (
+          <div className="cat-tiles">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div className="cat-tile skeleton-card" key={index}>
+                <div className="skeleton cat-tile-img" />
+                <div className="skeleton skeleton-line" />
+              </div>
+            ))}
           </div>
-          <div className="grid grid-4">
-            {products.map((product) => (
+        ) : (
+          <div className="cat-tiles">
+            {categories.map((category) => (
+              <Link
+                className="cat-tile"
+                key={category.id}
+                to={`/browse?category=${category.id}`}
+              >
+                <img src={mediaUrl(category.image)} alt="" loading="lazy" />
+                <span>{category.name}</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mall-section">
+        <div className="section-head">
+          <h2>Featured listings</h2>
+          <Link className="section-more" to="/browse">
+            Shop all
+          </Link>
+        </div>
+        {error ? <p className="error">{error}</p> : null}
+        {loading ? (
+          <div className="cat-tiles listing-tiles">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div className="cat-tile skeleton-card" key={index}>
+                <div className="skeleton cat-tile-img" />
+                <div className="skeleton skeleton-line" />
+              </div>
+            ))}
+          </div>
+        ) : featured.length > 0 ? (
+          <div className="cat-tiles listing-tiles">
+            {featured.map((product) => (
+              <Link
+                className="cat-tile"
+                key={product.id}
+                to={`/product/${product.id}`}
+              >
+                <img
+                  src={mediaUrl(product.image_url)}
+                  alt=""
+                  loading="lazy"
+                />
+                <span className="listing-tile-name">{product.name}</span>
+                <span className="listing-tile-price">{displayPrice(product.price)}</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="muted empty-mall">
+            New shops are joining every week. Browse categories or open your own shop.
+          </p>
+        )}
+      </section>
+
+      <HowItWorks />
+
+      {more.length > 0 ? (
+        <section className="mall-section">
+          <div className="section-head">
+            <h2>Just for you</h2>
+            <Link className="section-more" to="/browse">
+              Shop all
+            </Link>
+          </div>
+          <div className="grid grid-mall">
+            {more.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
-        </>
+        </section>
       ) : null}
     </div>
   );

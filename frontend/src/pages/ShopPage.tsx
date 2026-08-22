@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { api, mediaUrl } from "../api";
+import { Breadcrumb } from "../components/Breadcrumb";
 import { ContactActions } from "../components/ContactActions";
+import { EmptyState } from "../components/EmptyState";
+import { LoadingGrid } from "../components/LoadingGrid";
 import { ProductCard } from "../components/ProductCard";
 import type { Product, Seller } from "../types";
 
@@ -9,30 +12,40 @@ export function ShopPage() {
   const { slug = "" } = useParams();
   const [seller, setSeller] = useState<Seller | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    setLoading(true);
     api
       .shop(slug)
       .then((data) => {
         setSeller(data.seller);
         setProducts(data.products);
       })
-      .catch((err: Error) => setError(err.message));
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
   }, [slug]);
 
   if (error) {
     return (
-      <div className="wrap" style={{ paddingTop: 40 }}>
+      <div className="wrap page-top">
         <p className="error">{error}</p>
       </div>
     );
   }
-  if (!seller) return <div className="wrap" style={{ paddingTop: 40 }}>Loading shop…</div>;
+  if (loading || !seller) {
+    return (
+      <div className="wrap page-top">
+        <LoadingGrid count={3} />
+      </div>
+    );
+  }
 
   const coverUrl = mediaUrl(seller.avatar_url);
   const identity = (
     <>
+      <Breadcrumb items={[{ label: "Marketplace", to: "/browse" }, { label: seller.name }]} />
       <span className="chip">{seller.city}</span>
       <h1>{seller.name}</h1>
       {seller.bio ? <p className="lede">{seller.bio}</p> : null}
@@ -52,25 +65,32 @@ export function ShopPage() {
           </div>
         </section>
       ) : (
-        <div className="wrap" style={{ paddingTop: 36 }}>
-          {identity}
-        </div>
+        <div className="wrap page-top shop-cover-plain">{identity}</div>
       )}
-      <div className="wrap">
+      <div className="wrap mall">
         {seller.pickup_notes || seller.delivery_notes ? (
-          <section className="shop-notes">
-            {seller.pickup_notes ? <p>Pickup: {seller.pickup_notes}</p> : null}
-            {seller.delivery_notes ? <p>Delivery: {seller.delivery_notes}</p> : null}
+          <section className="shop-notes panel">
+            <h2>Pickup &amp; delivery</h2>
+            {seller.pickup_notes ? <p>{seller.pickup_notes}</p> : null}
+            {seller.delivery_notes ? <p>{seller.delivery_notes}</p> : null}
           </section>
         ) : null}
         <div className="section-head">
           <h2>Products</h2>
+          <span className="muted">{products.length} listing{products.length === 1 ? "" : "s"}</span>
         </div>
-        <div className="grid grid-3">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {products.length === 0 ? (
+          <EmptyState
+            title="No products yet"
+            text="This shop has not listed any products. Check back soon or contact the seller."
+          />
+        ) : (
+          <div className="grid grid-mall">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
       </div>
     </>
   );

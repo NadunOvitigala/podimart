@@ -1,31 +1,67 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { api } from "../api";
 import { SELLERCENTER_URL } from "../sites";
+import type { Category } from "../types";
+import { HeaderSearch } from "./HeaderSearch";
 
 export function Layout() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const location = useLocation();
+  const activeCategory = new URLSearchParams(location.search).get("category");
+
+  useEffect(() => {
+    api.categories().then(setCategories).catch(() => undefined);
+  }, []);
+
   return (
     <>
+      <div className="topbar">
+        <div className="wrap topbar-row">
+          <span>Free listings for home businesses across Sri Lanka</span>
+          <span className="topbar-hide">Order on WhatsApp · No payment on podimart.lk</span>
+        </div>
+      </div>
       <header className="site-header">
         <div className="wrap header-row">
           <NavLink to="/" className="brand">
-            <img src="/images/logo-podimart.png" alt="" />
+            <img src="/images/logo-icon.png" alt="" />
             <span className="brand-text">
               <span className="brand-name">podimart.lk</span>
-              <span className="brand-mark">Marketplace</span>
             </span>
           </NavLink>
+          <HeaderSearch />
           <nav className="nav">
-            <div className="nav-links">
-              <NavLink to="/browse" className="btn btn-clay">
-                Marketplace
-              </NavLink>
-              <NavLink to="/about">About us</NavLink>
-              <NavLink to="/contact">Contact us</NavLink>
-            </div>
-            <div className="nav-actions">
-              <a href={`${SELLERCENTER_URL}/signup`}>Open a free shop</a>
-            </div>
+            <NavLink
+              to="/browse"
+              className={({ isActive }) => (isActive ? "nav-quiet active" : "nav-quiet")}
+            >
+              Browse
+            </NavLink>
+            <a className="btn btn-clay" href={`${SELLERCENTER_URL}/signup`}>
+              Open a free shop
+            </a>
           </nav>
         </div>
+        {categories.length > 0 ? (
+          <div className="cat-strip">
+            <div className="wrap cat-strip-row">
+              {categories.map((category) => (
+                <NavLink
+                  key={category.id}
+                  to={`/browse?category=${category.id}`}
+                  className={
+                    location.pathname === "/browse" && activeCategory === category.id
+                      ? "cat-strip-link active"
+                      : "cat-strip-link"
+                  }
+                >
+                  {category.name}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </header>
       <main>
         <Outlet />
@@ -34,15 +70,14 @@ export function Layout() {
         <div className="wrap footer-grid">
           <div>
             <NavLink to="/" className="brand footer-brand">
-              <img src="/images/logo-podimart.png" alt="" />
+              <img src="/images/logo-icon.png" alt="" />
               <span className="brand-text">
                 <span className="brand-name">podimart.lk</span>
-                <span className="brand-mark">Marketplace</span>
               </span>
             </NavLink>
             <p>
-              A marketplace for home businesses. Find homemade cakes, crafts,
-              and more by province, then order on WhatsApp.
+              Sri Lanka&apos;s marketplace for home businesses. Browse homemade goods by
+              province and contact makers on WhatsApp.
             </p>
           </div>
           <div>
@@ -66,7 +101,7 @@ export function Layout() {
           </div>
         </div>
         <div className="wrap footer-bottom">
-          <p>© {new Date().getFullYear()} podimart.lk. Free listings. We do not take payment.</p>
+          <p>© {new Date().getFullYear()} podimart.lk · Free listings · No payment on site</p>
         </div>
       </footer>
     </>

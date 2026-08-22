@@ -1,22 +1,31 @@
 import { Link } from "react-router-dom";
-import { formatPrice, mediaUrl, productCode } from "../api";
+import { displayPrice, mediaUrl } from "../api";
 import type { Product } from "../types";
 
 export function ProductCard({ product }: { product: Product }) {
+  const hasPhoto = Boolean(product.image_url?.trim());
+
   return (
-    <Link className="card" to={`/product/${product.id}`}>
-      <img className="cover" src={mediaUrl(product.image_url)} alt="" />
-      <div className="card-body">
-        <span className="chip">{product.city}</span>
-        <h3>{product.name}</h3>
-        <p className="muted" style={{ margin: "0 0 4px" }}>
-          Product ID: {productCode(product)}
-        </p>
-        <p className="muted" style={{ margin: "0 0 8px" }}>
-          {product.seller_name}
-        </p>
-        <div className="price">{formatPrice(product.price)}</div>
-      </div>
-    </Link>
+    <article className="card product-card">
+      <Link className="card-link" to={`/product/${product.id}`}>
+        <div className="card-media">
+          <img
+            className="cover"
+            src={mediaUrl(product.image_url)}
+            alt={product.name}
+            loading="lazy"
+          />
+          {!hasPhoto ? <span className="photo-badge">Photo coming soon</span> : null}
+        </div>
+        <div className="card-body">
+          <h3>{product.name}</h3>
+          <span className="price">{displayPrice(product.price)}</span>
+          <p className="card-seller">
+            {product.seller_name}
+            {product.city ? ` · ${product.city}` : ""}
+          </p>
+        </div>
+      </Link>
+    </article>
   );
 }

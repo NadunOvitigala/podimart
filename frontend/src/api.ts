@@ -52,6 +52,11 @@ export function formatPrice(value: number): string {
   return `Rs ${Number(value || 0).toLocaleString("en-LK")}`;
 }
 
+export function displayPrice(value: number): string {
+  if (!value || value <= 0) return "Contact for price";
+  return formatPrice(value);
+}
+
 export function productCode(product: { id: string; code?: string }): string {
   if (product.code?.trim()) return product.code.trim().toUpperCase();
   return product.id ? `PM-${product.id.slice(0, 6).toUpperCase()}` : "";
