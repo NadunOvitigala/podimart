@@ -23,7 +23,7 @@ export function AboutPage() {
         </p>
       </div>
 
-      <div className="panel" style={{ marginTop: 18 }}>
+      <div className="panel stack-panel">
         <h2>For makers</h2>
         <p>
           Open a free shop on Seller Center, add photos and prices, and appear on the

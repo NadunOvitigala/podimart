@@ -4,7 +4,6 @@ import { api, displayPrice, mediaUrl, productCode } from "../api";
 import { Breadcrumb } from "../components/Breadcrumb";
 import { ContactActions } from "../components/ContactActions";
 import { LoadingGrid } from "../components/LoadingGrid";
-import { OrderForm } from "../components/OrderForm";
 import type { Product, Seller } from "../types";
 
 function listingPhotos(product: Product): string[] {
@@ -33,6 +32,7 @@ export function ProductPage() {
   const [error, setError] = useState("");
   const [active, setActive] = useState(0);
   const [zoomed, setZoomed] = useState(false);
+  const [variantId, setVariantId] = useState("");
 
   useEffect(() => {
     api
@@ -42,6 +42,7 @@ export function ProductPage() {
         setSeller(data.seller);
         setActive(0);
         setZoomed(false);
+        setVariantId(data.product.variants?.[0]?.id || "");
       })
       .catch((err: Error) => setError(err.message));
   }, [id]);
@@ -49,6 +50,12 @@ export function ProductPage() {
   const photos = useMemo(() => (product ? listingPhotos(product) : []), [product]);
   const current = photos[active] || photos[0] || "";
   const payments = useMemo(() => (product ? paymentLabels(product) : []), [product]);
+  const variants = product?.variants ?? [];
+  const selectedVariant = variants.find((item) => item.id === variantId) || variants[0];
+  const displayAmount = selectedVariant ? selectedVariant.price : product?.price || 0;
+  const orderHref = selectedVariant
+    ? `/order/${product?.id}?variant=${encodeURIComponent(selectedVariant.id)}`
+    : `/order/${product?.id}`;
 
   useEffect(() => {
     if (!zoomed) return;
@@ -128,11 +135,45 @@ export function ProductPage() {
               ))}
             </div>
           ) : null}
+          {seller ? (
+            <div className="panel contact-panel-compact">
+              <ContactActions seller={seller} product={product} />
+            </div>
+          ) : null}
         </div>
         <div>
           <span className="chip">{product.city}</span>
           <h1>{product.name}</h1>
-          <p className="price product-price">{displayPrice(product.price)}</p>
+          <p className="price product-price">{displayPrice(displayAmount)}</p>
+          {variants.length > 0 ? (
+            <div className="variant-picker">
+              <div className="variant-picker-label">
+                <span>{product.variation_type_label || "Option"}</span>
+                {selectedVariant ? <strong>{selectedVariant.label}</strong> : null}
+              </div>
+              <div className="variant-chips">
+                {variants.map((variant) => (
+                  <button
+                    key={variant.id}
+                    type="button"
+                    className={
+                      selectedVariant?.id === variant.id
+                        ? "variant-chip is-selected"
+                        : "variant-chip"
+                    }
+                    onClick={() => setVariantId(variant.id)}
+                  >
+                    {variant.label}
+                    {selectedVariant?.id === variant.id ? (
+                      <span className="variant-check" aria-hidden="true">
+                        ✓
+                      </span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {product.description ? <p className="product-desc">{product.description}</p> : null}
           <dl className="product-facts">
             {product.lead_time ? (
@@ -170,15 +211,25 @@ export function ProductPage() {
             ) : null}
           </dl>
           {seller ? (
-            <>
-              <OrderForm product={product} seller={seller} />
-              <div className="panel order-panel">
-                <ContactActions seller={seller} product={product} />
-              </div>
-            </>
+            <div className="order-now order-now-inline">
+              <Link className="btn btn-clay btn-order" to={orderHref}>
+                Order now
+              </Link>
+            </div>
           ) : null}
         </div>
       </div>
+      {seller ? (
+        <div className="product-buy-bar">
+          <div className="product-buy-meta">
+            <span className="product-buy-label">Total</span>
+            <strong className="product-buy-price">{displayPrice(displayAmount)}</strong>
+          </div>
+          <Link className="btn btn-clay product-buy-cta" to={orderHref}>
+            Order now
+          </Link>
+        </div>
+      ) : null}
       {zoomed && current ? (
         <div
           className="zoom-overlay"

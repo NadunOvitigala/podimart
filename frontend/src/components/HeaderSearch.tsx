@@ -23,11 +23,15 @@ export function HeaderSearch() {
         type="search"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        placeholder="Search cakes, crafts, gifts, shops, or a province"
+        placeholder="Search listings or shops"
+        className="header-search-input"
         aria-label="Search marketplace"
       />
       <button className="btn btn-clay" type="submit">
-        Search
+        <span className="search-btn-full">Search</span>
+        <span className="search-btn-short" aria-hidden="true">
+          Go
+        </span>
       </button>
     </form>
   );

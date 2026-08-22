@@ -46,9 +46,7 @@ export function ContactActions({
       </div>
       {onCover ? (
         <p className="contact-meta">Free to contact · You pay the maker directly</p>
-      ) : (
-        <p className="notice">podimart.lk connects buyers and home businesses.</p>
-      )}
+      ) : null}
     </div>
   );
 }

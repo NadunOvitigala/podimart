@@ -46,10 +46,13 @@ export const api = {
   },
   product: (id: string) =>
     request<{ product: Product; seller: Seller | null }>(`/products/${id}`),
+  contact: (body: { name: string; email: string; message: string; source?: string }) =>
+    request<{ ok: boolean }>("/contact", { method: "POST", body: JSON.stringify(body) }),
   createOrder: (body: {
     product_id: string;
     quantity: number;
     payment_method: string;
+    variant_id?: string;
     buyer_name: string;
     buyer_phone: string;
     buyer_email?: string;
@@ -61,6 +64,7 @@ export const api = {
         product_name: string;
         quantity: number;
         total_label: string;
+        variant_label?: string;
         payment_method?: string;
         payment_method_label?: string;
       };
