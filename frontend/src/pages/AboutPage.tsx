@@ -27,7 +27,7 @@ export function AboutPage() {
         <h2>For makers</h2>
         <p>
           Open a free shop on Seller Center, add photos and prices, and appear on the
-          marketplace. You keep every sale — podimart.lk does not take payment.
+          marketplace.
         </p>
         <p>
           <a className="btn btn-outline" href={`${SELLERCENTER_URL}/signup`}>

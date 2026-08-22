@@ -9,7 +9,7 @@ const STEPS = [
   },
   {
     title: "Arrange pickup or delivery",
-    text: "Agree price and timing with the maker. Podimart does not take payment.",
+    text: "Agree price and timing with the maker.",
   },
 ];
 

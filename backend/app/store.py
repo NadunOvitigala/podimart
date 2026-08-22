@@ -46,6 +46,8 @@ class Store(Protocol):
     ) -> list[dict[str, Any]]: ...
     def put_product(self, product: dict[str, Any]) -> dict[str, Any]: ...
     def delete_product(self, product_id: str, seller_id: str) -> bool: ...
+    def put_order(self, order: dict[str, Any]) -> dict[str, Any]: ...
+    def list_orders(self, seller_id: str) -> list[dict[str, Any]]: ...
     def is_empty(self) -> bool: ...
 
 
@@ -53,11 +55,15 @@ class LocalStore:
     def __init__(self, path: Path):
         self.path = path
         if not self.path.exists():
-            self._write({"sellers": [], "products": []})
+            self._write({"sellers": [], "products": [], "orders": []})
 
     def _read(self) -> dict[str, list[dict[str, Any]]]:
         with LOCK:
-            return json.loads(self.path.read_text(encoding="utf-8"))
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+        data.setdefault("sellers", [])
+        data.setdefault("products", [])
+        data.setdefault("orders", [])
+        return data
 
     def _write(self, data: dict[str, Any]) -> None:
         with LOCK:
@@ -139,12 +145,23 @@ class LocalStore:
         self._write(data)
         return len(data["products"]) < before
 
+    def put_order(self, order: dict[str, Any]) -> dict[str, Any]:
+        data = self._read()
+        data["orders"].append(order)
+        self._write(data)
+        return order
+
+    def list_orders(self, seller_id: str) -> list[dict[str, Any]]:
+        orders = [item for item in self._read()["orders"] if item.get("seller_id") == seller_id]
+        return sorted(orders, key=lambda item: item.get("created_at", ""), reverse=True)
+
 
 class DynamoStore:
     def __init__(self) -> None:
         dynamo = boto3.resource("dynamodb", region_name=settings.aws_region)
         self.sellers = dynamo.Table(settings.table_sellers)
         self.products = dynamo.Table(settings.table_products)
+        self.orders = dynamo.Table(settings.table_orders)
 
     def is_empty(self) -> bool:
         sellers = self.sellers.scan(Limit=1)
@@ -231,6 +248,22 @@ class DynamoStore:
             return False
         self.products.delete_item(Key={"id": product_id})
         return True
+
+    def put_order(self, order: dict[str, Any]) -> dict[str, Any]:
+        self.orders.put_item(Item=order)
+        return order
+
+    def list_orders(self, seller_id: str) -> list[dict[str, Any]]:
+        try:
+            res = self.orders.query(
+                IndexName="seller-index",
+                KeyConditionExpression=Key("seller_id").eq(seller_id),
+            )
+            orders = res.get("Items") or []
+        except Exception:
+            scanned = self.orders.scan().get("Items") or []
+            orders = [item for item in scanned if item.get("seller_id") == seller_id]
+        return sorted(orders, key=lambda item: item.get("created_at", ""), reverse=True)
 
 
 def get_store() -> Store:

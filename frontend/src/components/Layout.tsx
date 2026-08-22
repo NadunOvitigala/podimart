@@ -19,7 +19,7 @@ export function Layout() {
       <div className="topbar">
         <div className="wrap topbar-row">
           <span>Free listings for home businesses across Sri Lanka</span>
-          <span className="topbar-hide">Order on WhatsApp · No payment on podimart.lk</span>
+          <span className="topbar-hide">Order on WhatsApp</span>
         </div>
       </div>
       <header className="site-header">
@@ -101,7 +101,7 @@ export function Layout() {
           </div>
         </div>
         <div className="wrap footer-bottom">
-          <p>© {new Date().getFullYear()} podimart.lk · Free listings · No payment on site</p>
+          <p>© {new Date().getFullYear()} podimart.lk · Free listings</p>
         </div>
       </footer>
     </>

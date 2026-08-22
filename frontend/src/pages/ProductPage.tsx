@@ -4,6 +4,7 @@ import { api, displayPrice, mediaUrl, productCode } from "../api";
 import { Breadcrumb } from "../components/Breadcrumb";
 import { ContactActions } from "../components/ContactActions";
 import { LoadingGrid } from "../components/LoadingGrid";
+import { OrderForm } from "../components/OrderForm";
 import type { Product, Seller } from "../types";
 
 function listingPhotos(product: Product): string[] {
@@ -12,6 +13,17 @@ function listingPhotos(product: Product): string[] {
     return [product.image_url, ...urls];
   }
   return urls.length ? urls : product.image_url ? [product.image_url] : [];
+}
+
+const PAYMENT_LABELS: Record<string, string> = {
+  cash_on_delivery: "Cash on delivery",
+  bank_transfer: "Bank transfer",
+};
+
+function paymentLabels(product: Product): string[] {
+  return (product.payment_methods ?? [])
+    .map((id) => PAYMENT_LABELS[id] || id)
+    .filter(Boolean);
 }
 
 export function ProductPage() {
@@ -36,6 +48,7 @@ export function ProductPage() {
 
   const photos = useMemo(() => (product ? listingPhotos(product) : []), [product]);
   const current = photos[active] || photos[0] || "";
+  const payments = useMemo(() => (product ? paymentLabels(product) : []), [product]);
 
   useEffect(() => {
     if (!zoomed) return;
@@ -143,11 +156,26 @@ export function ProductPage() {
               <span className="ref-badge">{productCode(product)}</span>
               <span className="muted ref-hint"> Quote this when you contact the seller</span>
             </dd>
+            {payments.length > 0 ? (
+              <>
+                <dt>Payment</dt>
+                <dd>
+                  <ul className="payment-list">
+                    {payments.map((label) => (
+                      <li key={label}>{label}</li>
+                    ))}
+                  </ul>
+                </dd>
+              </>
+            ) : null}
           </dl>
           {seller ? (
-            <div className="panel order-panel">
-              <ContactActions seller={seller} product={product} />
-            </div>
+            <>
+              <OrderForm product={product} seller={seller} />
+              <div className="panel order-panel">
+                <ContactActions seller={seller} product={product} />
+              </div>
+            </>
           ) : null}
         </div>
       </div>

@@ -813,6 +813,25 @@ textarea {
   font-weight: 600;
 }
 
+.payment-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.payment-list li {
+  background: #eef6fc;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--clay-dark);
+}
+
 .ref-hint {
   font-size: 13px;
 }
@@ -824,6 +843,117 @@ textarea {
 .contact-title {
   margin: 0 0 4px;
   font-size: 18px;
+}
+
+.order-now {
+  margin: 4px 0 16px;
+}
+
+.btn-order {
+  width: auto;
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.order-hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+.order-form-panel {
+  margin: 8px 0 16px;
+}
+
+.order-form-panel h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.order-total {
+  margin: 0;
+  font-weight: 700;
+  color: var(--clay-dark);
+}
+
+.payment-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.payment-fieldset legend {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.payment-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.form .payment-option {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.2;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.form .payment-option:hover {
+  border-color: #9db4e0;
+}
+
+.form .payment-option:has(input:checked) {
+  border-color: #1f4ea8;
+  background: #f3f7fd;
+}
+
+.form .payment-option input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  accent-color: #1f4ea8;
+  flex-shrink: 0;
+}
+
+.form .payment-option span {
+  flex: 1;
+}
+
+@media (max-width: 520px) {
+  .payment-options {
+    grid-template-columns: 1fr;
+  }
+}
+
+.order-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.order-success p {
+  margin: 0 0 10px;
+}
+
+.order-ref {
+  font-weight: 600;
 }
 
 .shop-notes h2 {

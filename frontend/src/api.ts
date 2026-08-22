@@ -46,6 +46,26 @@ export const api = {
   },
   product: (id: string) =>
     request<{ product: Product; seller: Seller | null }>(`/products/${id}`),
+  createOrder: (body: {
+    product_id: string;
+    quantity: number;
+    payment_method: string;
+    buyer_name: string;
+    buyer_phone: string;
+    buyer_email?: string;
+    note?: string;
+  }) =>
+    request<{
+      order: {
+        reference: string;
+        product_name: string;
+        quantity: number;
+        total_label: string;
+        payment_method?: string;
+        payment_method_label?: string;
+      };
+      notified: { email: boolean; whatsapp: boolean };
+    }>("/orders", { method: "POST", body: JSON.stringify(body) }),
 };
 
 export function formatPrice(value: number): string {

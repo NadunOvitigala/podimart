@@ -3,13 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { api, formatPrice, mediaUrl } from "../api";
 import { useAuth } from "../auth";
 import { PUBLIC_URL } from "../sites";
-import type { Product, Seller } from "../types";
+import type { Order, Product, Seller } from "../types";
 
 export function DashboardPage() {
   const { token } = useAuth();
   const navigate = useNavigate();
   const [seller, setSeller] = useState<Seller | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [error, setError] = useState("");
   const [cities, setCities] = useState<string[]>([]);
   const [saved, setSaved] = useState("");
@@ -30,6 +31,7 @@ export function DashboardPage() {
         setProducts(data.products);
       })
       .catch((err: Error) => setError(err.message));
+    api.orders().then(setOrders).catch(() => undefined);
   }, [token, navigate]);
 
   async function saveProfile(event: FormEvent) {
@@ -159,6 +161,30 @@ export function DashboardPage() {
         </form>
 
         <div>
+          <h2>Incoming orders</h2>
+          {orders.length === 0 ? (
+            <div className="empty">No orders yet. Buyers can tap Order now on your listings.</div>
+          ) : (
+            orders.map((order) => (
+              <div className="table-row" key={order.id}>
+                <div>
+                  <strong>{order.reference}</strong>
+                  <div className="muted">{order.product_name} × {order.quantity}</div>
+                </div>
+                <div>
+                  <div>{order.buyer_name}</div>
+                  <div className="muted">{order.buyer_phone}</div>
+                </div>
+                <div className="muted">
+                  {order.payment_method_label || order.payment_method || "—"}
+                  <br />
+                  {order.total_label}
+                </div>
+                <div className="muted">{order.note || "No note"}</div>
+              </div>
+            ))
+          )}
+
           <h2>Listings</h2>
           {products.length === 0 ? (
             <div className="empty">No products yet. Add your first cake or craft.</div>

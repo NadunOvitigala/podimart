@@ -1,4 +1,4 @@
-import type { AuthResponse, Category, Product, Seller } from "./types";
+import type { AuthResponse, Category, Order, Product, Seller } from "./types";
 
 const API = import.meta.env.VITE_API_URL || "/api";
 const TOKEN_KEY = "podimart_admin_token";
@@ -54,6 +54,7 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }),
   me: () => request<{ seller: Seller; products: Product[] }>("/me"),
+  orders: () => request<Order[]>("/me/orders"),
   updateMe: (body: Record<string, string>) =>
     request<Seller>("/me", { method: "PUT", body: JSON.stringify(body) }),
   createProduct: (body: Record<string, string | number>) =>

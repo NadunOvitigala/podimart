@@ -35,6 +35,23 @@ export type Product = {
   created_at: string;
 };
 
+export type Order = {
+  id: string;
+  reference: string;
+  status: string;
+  product_name: string;
+  product_code: string;
+  quantity: number;
+  total_label: string;
+  payment_method?: string;
+  payment_method_label?: string;
+  buyer_name: string;
+  buyer_phone: string;
+  buyer_email: string;
+  note: string;
+  created_at: string;
+};
+
 export type AuthResponse = {
   token: string;
   seller: Seller;

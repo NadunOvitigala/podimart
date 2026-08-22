@@ -47,10 +47,7 @@ export function ContactActions({
       {onCover ? (
         <p className="contact-meta">Free to contact · You pay the maker directly</p>
       ) : (
-        <p className="notice">
-          podimart.lk connects buyers and home businesses. We do not process orders or
-          payments on this site.
-        </p>
+        <p className="notice">podimart.lk connects buyers and home businesses.</p>
       )}
     </div>
   );

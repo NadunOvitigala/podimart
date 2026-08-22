@@ -53,3 +53,13 @@ class ProductIn(BaseModel):
     description: str = Field(default="", max_length=800)
     lead_time: str = Field(default="Order 2 days before", max_length=80)
     image_url: str = Field(default="", max_length=500)
+
+
+class OrderIn(BaseModel):
+    product_id: str = Field(min_length=4, max_length=40)
+    quantity: int = Field(ge=1, le=99)
+    payment_method: str = Field(min_length=2, max_length=40)
+    buyer_name: str = Field(min_length=2, max_length=80)
+    buyer_phone: str = Field(min_length=8, max_length=20)
+    buyer_email: str = Field(default="", max_length=120)
+    note: str = Field(default="", max_length=400)

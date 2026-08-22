@@ -23,6 +23,18 @@ class Settings(BaseSettings):
         "http://localhost:5173,http://127.0.0.1:5173,"
         "http://localhost:5174,http://127.0.0.1:5174"
     )
+    table_orders: str = "podimart-orders"
+    # email_provider: ses (Amazon SES API) | smtp (SES SMTP or any SMTP)
+    email_provider: str = "ses"
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "podimart.lk <no-reply@podimart.lk>"
+    whatsapp_token: str = ""
+    whatsapp_phone_id: str = ""
+    whatsapp_template: str = ""
+    whatsapp_template_lang: str = "en"
 
 
 settings = Settings()

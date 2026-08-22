@@ -8,7 +8,8 @@ from mangum import Mangum
 from app.auth import create_token, get_seller_id, hash_password, verify_password
 from app.catalog import CATEGORIES, CITIES
 from app.config import settings
-from app.schemas import LoginIn, ProductIn, ProfileIn, SignupIn, public_seller
+from app.notify import notify_seller
+from app.schemas import LoginIn, OrderIn, ProductIn, ProfileIn, SignupIn, public_seller
 from app.seed import unique_slug
 from app.store import Store, get_store, new_id, now_iso
 
@@ -80,6 +81,71 @@ def create_app() -> FastAPI:
             "product": product,
             "seller": public_seller(seller) if seller else None,
         }
+
+    @app.post("/orders")
+    def create_order(body: OrderIn, _store: Store = Depends(db)):
+        product = _store.get_product(body.product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found.")
+        seller = _store.get_seller(product["seller_id"])
+        if not seller:
+            raise HTTPException(status_code=404, detail="Seller not found.")
+        labels = {
+            "cash_on_delivery": "Cash on delivery",
+            "bank_transfer": "Bank transfer",
+        }
+        allowed = [
+            m
+            for m in (product.get("payment_methods") or list(labels.keys()))
+            if m in labels
+        ] or list(labels.keys())
+        payment_method = body.payment_method.strip()
+        if payment_method not in allowed:
+            raise HTTPException(status_code=400, detail="Please choose an allowed payment method.")
+        order_id = new_id()
+        unit = int(product.get("price") or 0)
+        quantity = body.quantity
+        total = unit * quantity if unit > 0 else 0
+        total_label = f"Rs {total:,}" if total > 0 else "Contact for price"
+        code = (product.get("code") or "").strip().upper() or f"PM-{product['id'][:6].upper()}"
+        order = {
+            "id": order_id,
+            "reference": f"PM-ORD-{order_id[:6].upper()}",
+            "status": "pending",
+            "product_id": product["id"],
+            "product_name": product["name"],
+            "product_code": code,
+            "seller_id": seller["id"],
+            "seller_name": seller["name"],
+            "quantity": quantity,
+            "unit_price": unit,
+            "total": total,
+            "total_label": total_label,
+            "payment_method": payment_method,
+            "payment_method_label": labels.get(payment_method, payment_method),
+            "buyer_name": body.buyer_name.strip(),
+            "buyer_phone": body.buyer_phone.strip(),
+            "buyer_email": body.buyer_email.strip(),
+            "note": body.note.strip(),
+            "created_at": now_iso(),
+        }
+        _store.put_order(order)
+        notified = notify_seller(order, seller)
+        return {
+            "order": {
+                "reference": order["reference"],
+                "product_name": order["product_name"],
+                "quantity": order["quantity"],
+                "total_label": order["total_label"],
+                "payment_method": order["payment_method"],
+                "payment_method_label": order["payment_method_label"],
+            },
+            "notified": notified,
+        }
+
+    @app.get("/me/orders")
+    def my_orders(seller_id: str = Depends(get_seller_id), _store: Store = Depends(db)):
+        return _store.list_orders(seller_id)
 
     @app.post("/auth/signup")
     def signup(body: SignupIn, _store: Store = Depends(db)):
