@@ -1,4 +1,4 @@
-import type { AuthResponse, Category, Order, Product, Seller } from "./types";
+import type { AdminProduct, AdminSeller, AdminUser } from "./types";
 
 const API = import.meta.env.VITE_API_URL || "/api";
 const TOKEN_KEY = "podimart_admin_token";
@@ -42,32 +42,35 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  categories: () => request<Category[]>("/categories"),
-  cities: () => request<string[]>("/cities"),
-  product: (id: string) =>
-    request<{ product: Product; seller: Seller | null }>(`/products/${id}`),
-  signup: (body: Record<string, string>) =>
-    request<AuthResponse>("/auth/signup", { method: "POST", body: JSON.stringify(body) }),
-  login: (email: string, password: string) =>
-    request<AuthResponse>("/auth/login", {
+  adminLogin: (email: string, password: string) =>
+    request<{ token: string; email: string }>("/admin/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
-  me: () => request<{ seller: Seller; products: Product[] }>("/me"),
-  orders: () => request<Order[]>("/me/orders"),
-  updateMe: (body: Record<string, string>) =>
-    request<Seller>("/me", { method: "PUT", body: JSON.stringify(body) }),
-  createProduct: (body: Record<string, string | number>) =>
-    request<Product>("/products", { method: "POST", body: JSON.stringify(body) }),
-  updateProduct: (id: string, body: Record<string, string | number>) =>
-    request<Product>(`/products/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  adminMe: () => request<{ email: string }>("/admin/me"),
+  adminSellers: () => request<AdminSeller[]>("/admin/sellers"),
+  adminProducts: (sellerId?: string) =>
+    request<AdminProduct[]>(
+      sellerId ? `/admin/products?seller_id=${encodeURIComponent(sellerId)}` : "/admin/products",
+    ),
+  deleteSeller: (id: string) =>
+    request<{ ok: boolean }>(`/admin/sellers/${id}`, { method: "DELETE" }),
   deleteProduct: (id: string) =>
-    request<{ ok: boolean }>(`/products/${id}`, { method: "DELETE" }),
-  upload: async (file: File) => {
-    const data = new FormData();
-    data.append("file", file);
-    return request<{ url: string }>("/media/upload", { method: "POST", body: data });
-  },
+    request<{ ok: boolean }>(`/admin/products/${id}`, { method: "DELETE" }),
+  adminUsers: () => request<AdminUser[]>("/admin/users"),
+  grantAdmin: (email: string) =>
+    request<{ ok: boolean }>("/admin/users/grant", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+  revokeAdmin: (email: string) =>
+    request<{ ok: boolean }>(`/admin/users/${encodeURIComponent(email)}/admin`, {
+      method: "DELETE",
+    }),
+  deleteUser: (email: string) =>
+    request<{ ok: boolean }>(`/admin/users/${encodeURIComponent(email)}`, {
+      method: "DELETE",
+    }),
 };
 
 export function formatPrice(value: number): string {

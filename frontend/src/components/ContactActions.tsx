@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { productCode, whatsappLink } from "../api";
 import type { Product, Seller } from "../types";
 
@@ -18,6 +17,7 @@ export function ContactActions({
     : `Hi ${seller.name}, I found your shop on podimart.lk and would like to enquire.`;
   const mail = `mailto:${seller.email_public}?subject=${encodeURIComponent(`podimart.lk — ${item}`)}&body=${encodeURIComponent(message)}`;
   const onCover = variant === "cover";
+  const phoneHref = seller.phone ? `tel:${seller.phone.replace(/\s+/g, "")}` : "";
 
   return (
     <div className={onCover ? "contact-cover" : "contact-row"}>
@@ -33,8 +33,8 @@ export function ContactActions({
             WhatsApp
           </a>
         ) : null}
-        {seller.phone ? (
-          <a className={onCover ? "btn contact-ghost" : "btn btn-outline"} href={`tel:${seller.phone}`}>
+        {phoneHref ? (
+          <a className={onCover ? "btn contact-ghost" : "btn btn-outline"} href={phoneHref}>
             Call
           </a>
         ) : null}

@@ -23,21 +23,25 @@ export function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const featured = products.slice(0, 8);
-  const more = products.slice(8, 20);
+  const featured = products.slice(0, 10);
+  const more = products.slice(0, 12);
 
   return (
-    <div className="wrap mall">
-      <section className="promo-banner">
-        <div className="promo-copy">
-          <p className="eyebrow">Sri Lanka · Home businesses</p>
+    <div className="wrap mall home-mall">
+      <section className="home-hero">
+        <img
+          className="home-hero-img"
+          src="/images/hero-marketplace.png"
+          alt="Homemade cakes, crafts, flowers, and gifts"
+        />
+        <div className="home-hero-overlay">
+          <p className="home-hero-kicker">Sri Lanka · Home businesses</p>
           <h1>Homemade goods from local makers</h1>
-          <p className="lede">
-            Browse cakes, crafts, food, and gifts by category and province, then order
-            directly on WhatsApp.
+          <p className="home-hero-lede">
+            Browse by category and province, then order on WhatsApp.
           </p>
-          <div className="hero-actions">
-            <Link className="btn btn-light" to="/browse">
+          <div className="home-hero-actions">
+            <Link className="btn btn-clay" to="/browse">
               Shop now
             </Link>
             <a className="btn btn-ghost-light" href={`${SELLERCENTER_URL}/signup`}>
@@ -45,77 +49,54 @@ export function HomePage() {
             </a>
           </div>
         </div>
-        <img
-          className="promo-photo"
-          src="/images/hero-marketplace.png"
-          alt="Homemade cakes, crafts, flowers, and gifts"
-        />
       </section>
 
-      <section className="mall-section">
-        <div className="section-head">
-          <h2>Categories</h2>
-          <Link className="section-more" to="/browse">
-            Shop all
-          </Link>
-        </div>
-        {loading ? (
-          <div className="cat-tiles">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <div className="cat-tile skeleton-card" key={index}>
-                <div className="skeleton cat-tile-img" />
+      <section className="home-cats" aria-label="Categories">
+        {loading
+          ? Array.from({ length: 8 }).map((_, index) => (
+              <div className="home-cat-item skeleton-card" key={index}>
+                <div className="skeleton home-cat-icon" />
                 <div className="skeleton skeleton-line" />
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="cat-tiles">
-            {categories.map((category) => (
+            ))
+          : categories.map((category) => (
               <Link
-                className="cat-tile"
+                className="home-cat-item"
                 key={category.id}
                 to={`/browse?category=${category.id}`}
               >
-                <img src={mediaUrl(category.image)} alt="" loading="lazy" />
-                <span>{category.name}</span>
+                <span className="home-cat-icon">
+                  <img src={mediaUrl(category.image)} alt="" loading="lazy" />
+                </span>
+                <span className="home-cat-name">{category.name}</span>
               </Link>
             ))}
-          </div>
-        )}
       </section>
 
-      <section className="mall-section">
+      <section className="mall-section home-rail-block">
         <div className="section-head">
-          <h2>Featured listings</h2>
+          <h2>Featured</h2>
           <Link className="section-more" to="/browse">
-            Shop all
+            Shop More ›
           </Link>
         </div>
         {error ? <p className="error">{error}</p> : null}
         {loading ? (
-          <div className="cat-tiles listing-tiles">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <div className="cat-tile skeleton-card" key={index}>
-                <div className="skeleton cat-tile-img" />
+          <div className="home-product-rail">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div className="home-rail-card skeleton-card" key={index}>
+                <div className="skeleton home-rail-thumb" />
                 <div className="skeleton skeleton-line" />
               </div>
             ))}
           </div>
         ) : featured.length > 0 ? (
-          <div className="cat-tiles listing-tiles">
+          <div className="home-product-rail">
             {featured.map((product) => (
-              <Link
-                className="cat-tile"
-                key={product.id}
-                to={`/product/${product.id}`}
-              >
-                <img
-                  src={mediaUrl(product.image_url)}
-                  alt=""
-                  loading="lazy"
-                />
-                <span className="listing-tile-name">{product.name}</span>
-                <span className="listing-tile-price">{displayPrice(product.price)}</span>
+              <Link className="home-rail-card" key={product.id} to={`/product/${product.id}`}>
+                <img src={mediaUrl(product.image_url)} alt="" loading="lazy" />
+                <span className="home-rail-name">{product.name}</span>
+                <span className="home-rail-price">{displayPrice(product.price)}</span>
               </Link>
             ))}
           </div>
@@ -133,10 +114,10 @@ export function HomePage() {
           <div className="section-head">
             <h2>Just for you</h2>
             <Link className="section-more" to="/browse">
-              Shop all
+              Shop More ›
             </Link>
           </div>
-          <div className="grid grid-mall">
+          <div className="grid grid-mall home-just-grid">
             {more.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

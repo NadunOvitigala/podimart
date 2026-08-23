@@ -36,6 +36,43 @@ export function Layout() {
     setMenuOpen(false);
   }
 
+  const sellerLoginUrl = `${SELLERCENTER_URL}/login`;
+  const sellerSignupUrl = `${SELLERCENTER_URL}/signup`;
+
+  const menuLinks = (
+    <>
+      <NavLink
+        to="/browse"
+        className={({ isActive }) => (isActive ? "nav-quiet active" : "nav-quiet")}
+        onClick={closeMenu}
+      >
+        Browse marketplace
+      </NavLink>
+      <NavLink
+        to="/about"
+        className={({ isActive }) => (isActive ? "nav-quiet active" : "nav-quiet")}
+        onClick={closeMenu}
+      >
+        About us
+      </NavLink>
+      <NavLink
+        to="/contact"
+        className={({ isActive }) => (isActive ? "nav-quiet active" : "nav-quiet")}
+        onClick={closeMenu}
+      >
+        Contact us
+      </NavLink>
+      <p className="nav-owner-label">For shop owners</p>
+      <a className="nav-quiet nav-login" href={sellerLoginUrl} onClick={closeMenu}>
+        Log in
+      </a>
+      <a className="btn btn-clay nav-cta" href={sellerSignupUrl} onClick={closeMenu}>
+        <span className="nav-cta-full">Open a free shop</span>
+        <span className="nav-cta-short">Open a free shop</span>
+      </a>
+    </>
+  );
+
   return (
     <>
       <div className="topbar">
@@ -45,51 +82,27 @@ export function Layout() {
         </div>
       </div>
       <header className="site-header">
-        <div className={`wrap header-row${menuOpen ? " is-menu-open" : ""}`}>
+        <div className="wrap header-row">
           <NavLink to="/" className="brand" onClick={closeMenu}>
             <img src="/images/logo-icon.png" alt="" />
             <span className="brand-text">
               <span className="brand-name">podimart.lk</span>
             </span>
           </NavLink>
+          <HeaderSearch />
+          <nav id="site-nav" className="nav nav-desktop">
+            {menuLinks}
+          </nav>
           <button
             type="button"
             className={menuOpen ? "nav-toggle is-open" : "nav-toggle"}
             aria-expanded={menuOpen}
-            aria-controls="site-nav"
+            aria-controls="site-more"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             onClick={() => setMenuOpen((open) => !open)}
           >
             <span className="nav-toggle-bars" aria-hidden="true" />
           </button>
-          <HeaderSearch />
-          <nav id="site-nav" className={menuOpen ? "nav is-open" : "nav"}>
-            <NavLink
-              to="/browse"
-              className={({ isActive }) => (isActive ? "nav-quiet active" : "nav-quiet")}
-              onClick={closeMenu}
-            >
-              Browse marketplace
-            </NavLink>
-            <NavLink
-              to="/about"
-              className={({ isActive }) => (isActive ? "nav-quiet active" : "nav-quiet")}
-              onClick={closeMenu}
-            >
-              About us
-            </NavLink>
-            <NavLink
-              to="/contact"
-              className={({ isActive }) => (isActive ? "nav-quiet active" : "nav-quiet")}
-              onClick={closeMenu}
-            >
-              Contact us
-            </NavLink>
-            <a className="btn btn-clay nav-cta" href={`${SELLERCENTER_URL}/signup`} onClick={closeMenu}>
-              <span className="nav-cta-full">Open a free shop</span>
-              <span className="nav-cta-short">Open a free shop</span>
-            </a>
-          </nav>
         </div>
         {categories.length > 0 ? (
           <div className="cat-strip">
@@ -111,6 +124,32 @@ export function Layout() {
           </div>
         ) : null}
       </header>
+
+      {menuOpen ? (
+        <button
+          type="button"
+          className="more-sheet-backdrop"
+          aria-label="Close menu"
+          onClick={closeMenu}
+        />
+      ) : null}
+      <div
+        id="site-more"
+        className={menuOpen ? "more-sheet is-open" : "more-sheet"}
+        role="dialog"
+        aria-modal="true"
+        aria-hidden={!menuOpen}
+        aria-label="Menu"
+      >
+        <div className="more-sheet-head">
+          <h2>Menu</h2>
+          <button type="button" className="more-sheet-close" onClick={closeMenu}>
+            Close
+          </button>
+        </div>
+        <nav className="more-sheet-nav">{menuLinks}</nav>
+      </div>
+
       <main className="site-main">
         <Outlet />
       </main>
@@ -134,34 +173,34 @@ export function Layout() {
             <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" />
             <path d="M16 16l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
-          <span>Browse</span>
+          <span>Categories</span>
         </NavLink>
-        <a className="tabbar-item" href={`${SELLERCENTER_URL}/signup`}>
+        <a className="tabbar-item" href={sellerLoginUrl}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
-              d="M12 5v14M5 12h14"
+              d="M10 7V5a2 2 0 0 1 2-2h7v18h-7a2 2 0 0 1-2-2v-2"
               stroke="currentColor"
               strokeWidth="1.8"
               strokeLinecap="round"
             />
+            <path
+              d="M15 12H3m0 0l3-3m-3 3l3 3"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
+          <span>Log in</span>
+        </a>
+        <a className="tabbar-item tabbar-primary" href={sellerSignupUrl}>
+          <span className="tabbar-fab" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
+          </span>
           <span>Sell</span>
         </a>
-        <button
-          type="button"
-          className={menuOpen ? "tabbar-item is-active" : "tabbar-item"}
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M5 7h14M5 12h14M5 17h14"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          </svg>
-          <span>Menu</span>
-        </button>
       </nav>
       <footer className="site-footer">
         <div className="wrap footer-grid">
@@ -187,7 +226,8 @@ export function Layout() {
           </div>
           <div>
             <h3>For makers</h3>
-            <a href={`${SELLERCENTER_URL}/signup`}>Open a free shop</a>
+            <a href={sellerLoginUrl}>Log in to your shop</a>
+            <a href={sellerSignupUrl}>Open a free shop</a>
             <a href={SELLERCENTER_URL}>Seller Center</a>
           </div>
           <div>

@@ -62,12 +62,25 @@ export function OrderPage() {
   const variants = product?.variants ?? [];
   const selectedVariant = variants.find((item) => item.id === variantId) || variants[0];
   const unitPrice = selectedVariant ? selectedVariant.price : product?.price || 0;
+  const deliveryCharge = product?.delivery_charge ?? 0;
+  const deliveryNote = product?.delivery_note?.trim() || "";
 
-  const totalLabel = useMemo(() => {
+  const itemsTotalLabel = useMemo(() => {
     if (!product) return "—";
     if (!unitPrice || unitPrice <= 0) return "Contact for price";
     return formatPrice(unitPrice * quantity);
   }, [product, quantity, unitPrice]);
+
+  const deliveryLabel = deliveryCharge > 0 ? formatPrice(deliveryCharge) : "Free";
+
+  const grandTotalLabel = useMemo(() => {
+    if (!product) return "—";
+    if (!unitPrice || unitPrice <= 0) {
+      if (deliveryCharge > 0) return `${formatPrice(deliveryCharge)} delivery · contact for item price`;
+      return "Contact for price";
+    }
+    return formatPrice(unitPrice * quantity + deliveryCharge);
+  }, [product, quantity, unitPrice, deliveryCharge]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -162,7 +175,7 @@ export function OrderPage() {
         ]}
       />
       <h1 className="checkout-title">Place order</h1>
-      <form className="checkout-layout" onSubmit={onSubmit}>
+      <form id="checkout-form" className="checkout-layout" onSubmit={onSubmit}>
         <div className="checkout-main">
           <section className="checkout-card">
             <div className="checkout-card-head">
@@ -329,13 +342,22 @@ export function OrderPage() {
             <dl className="checkout-totals">
               <div>
                 <dt>
-                  Items total ({quantity} {quantity === 1 ? "item" : "items"})
+                  Items ({quantity} {quantity === 1 ? "item" : "items"})
                 </dt>
-                <dd>{totalLabel}</dd>
+                <dd>{itemsTotalLabel}</dd>
+              </div>
+              <div>
+                <dt>Delivery</dt>
+                <dd>
+                  {deliveryLabel}
+                  {deliveryNote ? (
+                    <span className="checkout-delivery-note">{deliveryNote}</span>
+                  ) : null}
+                </dd>
               </div>
               <div className="checkout-grand">
                 <dt>Total</dt>
-                <dd>{totalLabel}</dd>
+                <dd>{grandTotalLabel}</dd>
               </div>
             </dl>
             {error ? <p className="error">{error}</p> : null}
@@ -355,6 +377,21 @@ export function OrderPage() {
           </section>
         </aside>
       </form>
+
+      <div className="checkout-mobile-bar">
+        <div className="checkout-mobile-total">
+          <span className="checkout-mobile-label">Total</span>
+          <strong>{grandTotalLabel}</strong>
+        </div>
+        <button
+          className="btn btn-clay checkout-mobile-submit"
+          type="submit"
+          form="checkout-form"
+          disabled={sending || !seller}
+        >
+          {sending ? "Placing…" : "Place order"}
+        </button>
+      </div>
     </div>
   );
 }

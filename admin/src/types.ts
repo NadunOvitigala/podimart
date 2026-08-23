@@ -1,26 +1,16 @@
-export type Category = {
-  id: string;
-  name: string;
-  blurb: string;
-  image: string;
-};
-
-export type Seller = {
+export type AdminSeller = {
   id: string;
   name: string;
   slug: string;
   city: string;
-  bio: string;
-  avatar_url: string;
+  email: string;
   whatsapp: string;
   phone: string;
-  email_public: string;
-  pickup_notes: string;
-  delivery_notes: string;
   product_count?: number;
+  created_at?: string;
 };
 
-export type Product = {
+export type AdminProduct = {
   id: string;
   seller_id: string;
   seller_slug: string;
@@ -32,27 +22,18 @@ export type Product = {
   price: number;
   lead_time: string;
   image_url: string;
-  created_at: string;
+  code?: string;
+  status?: string;
+  created_at?: string;
 };
 
-export type Order = {
-  id: string;
-  reference: string;
+export type AdminUser = {
+  email: string;
+  name: string;
   status: string;
-  product_name: string;
-  product_code: string;
-  quantity: number;
-  total_label: string;
-  payment_method?: string;
-  payment_method_label?: string;
-  buyer_name: string;
-  buyer_phone: string;
-  buyer_email: string;
-  note: string;
-  created_at: string;
-};
-
-export type AuthResponse = {
-  token: string;
-  seller: Seller;
+  created_at?: string;
+  shop_name: string;
+  shop_slug: string;
+  is_admin: boolean;
+  granted_at?: string;
 };

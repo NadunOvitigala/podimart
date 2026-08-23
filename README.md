@@ -6,7 +6,7 @@ No custom domain yet. Localhost for development, **AWS default DNS** (CloudFront
 
 ## Run locally
 
-You need Node 20+. Listings come from the **sellercenter API** — do not start this repo’s `backend/`.
+You need Node 20+. Listings come from the **sellercenter API** (`E:\Git\podimart-sellercenter\backend`).
 
 ```powershell
 cd E:\Git\podimart\frontend
@@ -53,6 +53,8 @@ A custom domain (`podimart.lk`) can be attached later in Route 53.
 
 ## What this repo includes
 
-- Buyer site: home, category + city browse, seller shop, product page
-- Contact via WhatsApp, call, email (no payments)
-- Seller auth, DynamoDB, and photos live in **podimart-sellercenter**
+- **frontend/** — Buyer site (podimart.lk): home, browse, shop, product pages
+- **admin/** — Platform admin console (shops & listings management)
+- **infra/** — Buyer S3 + CloudFront only (no API here)
+
+Seller API, Cognito auth, DynamoDB, and photos live in **podimart-sellercenter**.

@@ -12,8 +12,6 @@ dist/
 frontend/dist/
 
 # Local data
-backend/data/
-backend/uploads/
 *.local.json
 
 # OS / IDE

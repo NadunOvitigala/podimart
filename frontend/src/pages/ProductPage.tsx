@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type UIEvent } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api, displayPrice, mediaUrl, productCode } from "../api";
+import { api, displayPrice, mediaUrl, productCode, whatsappLink } from "../api";
 import { Breadcrumb } from "../components/Breadcrumb";
-import { ContactActions } from "../components/ContactActions";
 import { LoadingGrid } from "../components/LoadingGrid";
 import type { Product, Seller } from "../types";
 
@@ -12,6 +11,16 @@ function listingPhotos(product: Product): string[] {
     return [product.image_url, ...urls];
   }
   return urls.length ? urls : product.image_url ? [product.image_url] : [];
+}
+
+type MediaItem = { type: "image" | "video"; url: string };
+
+function listingMedia(product: Product): MediaItem[] {
+  const photos = listingPhotos(product).map((url) => ({ type: "image" as const, url }));
+  const videos = (product.video_urls ?? [])
+    .filter(Boolean)
+    .map((url) => ({ type: "video" as const, url }));
+  return [...photos, ...videos];
 }
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -25,6 +34,21 @@ function paymentLabels(product: Product): string[] {
     .filter(Boolean);
 }
 
+function Chevron({ open }: { open?: boolean }) {
+  return (
+    <svg
+      className={open ? "product-row-chevron is-open" : "product-row-chevron"}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function ProductPage() {
   const { id = "" } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
@@ -33,6 +57,8 @@ export function ProductPage() {
   const [active, setActive] = useState(0);
   const [zoomed, setZoomed] = useState(false);
   const [variantId, setVariantId] = useState("");
+  const [openRows, setOpenRows] = useState({ options: true, details: true });
+  const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     api
@@ -43,12 +69,14 @@ export function ProductPage() {
         setActive(0);
         setZoomed(false);
         setVariantId(data.product.variants?.[0]?.id || "");
+        setOpenRows({ options: true, details: true });
       })
       .catch((err: Error) => setError(err.message));
   }, [id]);
 
-  const photos = useMemo(() => (product ? listingPhotos(product) : []), [product]);
-  const current = photos[active] || photos[0] || "";
+  const media = useMemo(() => (product ? listingMedia(product) : []), [product]);
+  const currentItem = media[active] || media[0];
+  const current = currentItem?.type === "image" ? currentItem.url : "";
   const payments = useMemo(() => (product ? paymentLabels(product) : []), [product]);
   const variants = product?.variants ?? [];
   const selectedVariant = variants.find((item) => item.id === variantId) || variants[0];
@@ -56,6 +84,10 @@ export function ProductPage() {
   const orderHref = selectedVariant
     ? `/order/${product?.id}?variant=${encodeURIComponent(selectedVariant.id)}`
     : `/order/${product?.id}`;
+  const code = product ? productCode(product) : "";
+  const whatsappMessage = product
+    ? `Hi ${seller?.name || product.seller_name}, I would like to order ${product.name} (Ref ${code}) from podimart.lk. Is it available?`
+    : "";
 
   useEffect(() => {
     if (!zoomed) return;
@@ -69,6 +101,24 @@ export function ProductPage() {
       document.body.style.overflow = "";
     };
   }, [zoomed]);
+
+  function onCarouselScroll(event: UIEvent<HTMLDivElement>) {
+    const track = event.currentTarget;
+    const width = track.clientWidth || 1;
+    const index = Math.round(track.scrollLeft / width);
+    if (index !== active) setActive(index);
+  }
+
+  function scrollToSlide(index: number) {
+    setActive(index);
+    const track = trackRef.current;
+    if (!track) return;
+    track.scrollTo({ left: index * track.clientWidth, behavior: "smooth" });
+  }
+
+  function toggleRow(key: "options" | "details") {
+    setOpenRows((current) => ({ ...current, [key]: !current[key] }));
+  }
 
   if (error) {
     return (
@@ -86,7 +136,7 @@ export function ProductPage() {
   }
 
   return (
-    <div className="wrap page-top">
+    <div className="wrap page-top product-page">
       <Breadcrumb
         items={[
           { label: "Marketplace", to: "/browse" },
@@ -94,122 +144,233 @@ export function ProductPage() {
           { label: product.name },
         ]}
       />
-      <div className="product-layout">
+
+      <div className="product-layout product-mall">
         <div className="product-gallery">
-          {current ? (
-            <div className="product-photo-wrap">
-              <button
-                type="button"
-                className="product-photo-btn"
-                onClick={() => setZoomed(true)}
-                aria-label="Zoom product photo"
+          {media.length > 0 ? (
+            <>
+              <div className="product-carousel-desktop">
+                <div className="product-photo-wrap">
+                  {currentItem?.type === "video" ? (
+                    <video
+                      className="product-photo product-video"
+                      src={mediaUrl(currentItem.url)}
+                      controls
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className="product-photo-btn"
+                      onClick={() => setZoomed(true)}
+                      aria-label="Zoom product photo"
+                    >
+                      <img className="product-photo" src={mediaUrl(current)} alt={product.name} />
+                      <span className="zoom-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                          <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="2" />
+                          <path d="M16 16l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          <path
+                            d="M11 8v6M8 11h6"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div
+                ref={trackRef}
+                className="product-carousel-track"
+                onScroll={onCarouselScroll}
               >
-                <img
-                  className="product-photo"
-                  src={mediaUrl(current)}
-                  alt={product.name}
-                />
-                <span className="zoom-icon" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="2" />
-                    <path d="M16 16l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    <path d="M11 8v6M8 11h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
+                {media.map((item, index) => (
+                  <div key={`${item.type}-${item.url}`} className="product-carousel-slide">
+                    {item.type === "video" ? (
+                      <video
+                        src={mediaUrl(item.url)}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        aria-label={`Product video ${index + 1}`}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        className="product-carousel-photo-btn"
+                        onClick={() => setZoomed(true)}
+                        aria-label={`View photo ${index + 1}`}
+                      >
+                        <img src={mediaUrl(item.url)} alt={product.name} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {media.length > 1 ? (
+                <span className="product-carousel-badge">
+                  {active + 1}/{media.length}
                 </span>
-              </button>
-            </div>
+              ) : null}
+            </>
           ) : (
             <div className="product-photo product-photo-empty">Photo coming soon</div>
           )}
-          {photos.length > 1 ? (
+
+          {media.length > 1 ? (
             <div className="product-thumbs">
-              {photos.map((url, index) => (
+              {media.map((item, index) => (
                 <button
-                  key={url}
+                  key={`${item.type}-${item.url}`}
                   type="button"
                   className={index === active ? "is-active" : ""}
-                  onClick={() => setActive(index)}
+                  onClick={() => scrollToSlide(index)}
                 >
-                  <img src={mediaUrl(url)} alt="" />
+                  {item.type === "video" ? (
+                    <span className="product-thumb-video" aria-hidden="true">
+                      ▶
+                    </span>
+                  ) : (
+                    <img src={mediaUrl(item.url)} alt="" />
+                  )}
                 </button>
               ))}
             </div>
           ) : null}
-          {seller ? (
-            <div className="panel contact-panel-compact">
-              <ContactActions seller={seller} product={product} />
-            </div>
-          ) : null}
         </div>
-        <div>
-          <span className="chip">{product.city}</span>
-          <h1>{product.name}</h1>
-          <p className="price product-price">{displayPrice(displayAmount)}</p>
-          {variants.length > 0 ? (
-            <div className="variant-picker">
-              <div className="variant-picker-label">
-                <span>{product.variation_type_label || "Option"}</span>
-                {selectedVariant ? <strong>{selectedVariant.label}</strong> : null}
-              </div>
-              <div className="variant-chips">
-                {variants.map((variant) => (
-                  <button
-                    key={variant.id}
-                    type="button"
-                    className={
-                      selectedVariant?.id === variant.id
-                        ? "variant-chip is-selected"
-                        : "variant-chip"
-                    }
-                    onClick={() => setVariantId(variant.id)}
-                  >
-                    {variant.label}
-                    {selectedVariant?.id === variant.id ? (
-                      <span className="variant-check" aria-hidden="true">
-                        ✓
-                      </span>
-                    ) : null}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          {product.description ? <p className="product-desc">{product.description}</p> : null}
-          <dl className="product-facts">
-            {product.lead_time ? (
-              <>
-                <dt>Lead time</dt>
-                <dd>{product.lead_time}</dd>
-              </>
-            ) : null}
-            <dt>Seller</dt>
-            <dd>
-              {seller ? (
+
+        <div className="product-info">
+          <div className="product-mall-head">
+            <p className="price product-price product-mall-price">{displayPrice(displayAmount)}</p>
+            <h1 className="product-title">{product.name}</h1>
+            {seller ? (
+              <p className="product-sold-by">
+                Sold by{" "}
                 <Link className="text-link" to={`/shop/${seller.slug}`}>
                   {product.seller_name}
                 </Link>
-              ) : (
-                product.seller_name
-              )}
-            </dd>
-            <dt>Reference</dt>
-            <dd>
-              <span className="ref-badge">{productCode(product)}</span>
-              <span className="muted ref-hint"> Quote this when you contact the seller</span>
-            </dd>
-            {payments.length > 0 ? (
-              <>
-                <dt>Payment</dt>
-                <dd>
-                  <ul className="payment-list">
-                    {payments.map((label) => (
-                      <li key={label}>{label}</li>
-                    ))}
-                  </ul>
-                </dd>
-              </>
+              </p>
             ) : null}
-          </dl>
+            <div className="product-mall-tags">
+              <span className="chip">{product.city}</span>
+              <span className="chip product-ref-chip">{code}</span>
+            </div>
+          </div>
+
+          <div className="product-mall-rows">
+            {variants.length > 0 ? (
+              <section className="product-mall-row product-mall-row-options">
+                <button
+                  type="button"
+                  className="product-mall-row-head"
+                  onClick={() => toggleRow("options")}
+                >
+                  <span className="product-mall-row-label">
+                    {product.variation_type_label || "Option"}
+                  </span>
+                  <span className="product-mall-row-value">{selectedVariant?.label || "Choose"}</span>
+                  <Chevron open={openRows.options} />
+                </button>
+                <div className={`product-mall-row-body ${openRows.options ? "is-open" : ""}`}>
+                    <div className="variant-chips">
+                      {variants.map((variant) => (
+                        <button
+                          key={variant.id}
+                          type="button"
+                          className={
+                            selectedVariant?.id === variant.id
+                              ? "variant-chip is-selected"
+                              : "variant-chip"
+                          }
+                          onClick={() => setVariantId(variant.id)}
+                        >
+                          {variant.label}
+                          {selectedVariant?.id === variant.id ? (
+                            <span className="variant-check" aria-hidden="true">
+                              ✓
+                            </span>
+                          ) : null}
+                        </button>
+                      ))}
+                    </div>
+                </div>
+              </section>
+            ) : null}
+
+            <section className="product-mall-row product-mall-row-details">
+              <button
+                type="button"
+                className="product-mall-row-head"
+                onClick={() => toggleRow("details")}
+              >
+                <span className="product-mall-row-label">Details</span>
+                <span className="product-mall-row-value product-mall-row-preview">
+                  {product.lead_time || product.seller_name}
+                </span>
+                <Chevron open={openRows.details} />
+              </button>
+              <div className={`product-mall-row-body ${openRows.details ? "is-open" : ""}`}>
+                  <div className="product-spec-list">
+                    {product.lead_time ? (
+                      <div className="product-spec-row">
+                        <span className="product-spec-label">Lead time</span>
+                        <span className="product-spec-value">{product.lead_time}</span>
+                      </div>
+                    ) : null}
+                    <div className="product-spec-row">
+                      <span className="product-spec-label">Delivery</span>
+                      <span className="product-spec-value">
+                        {(product.delivery_charge ?? 0) > 0
+                          ? displayPrice(product.delivery_charge ?? 0)
+                          : "Free"}
+                        {product.delivery_note ? ` · ${product.delivery_note}` : ""}
+                      </span>
+                    </div>
+                    <div className="product-spec-row">
+                      <span className="product-spec-label">Seller</span>
+                      <span className="product-spec-value">
+                        {seller ? (
+                          <Link className="text-link" to={`/shop/${seller.slug}`}>
+                            {product.seller_name}
+                          </Link>
+                        ) : (
+                          product.seller_name
+                        )}
+                      </span>
+                    </div>
+                    <div className="product-spec-row">
+                      <span className="product-spec-label">Reference</span>
+                      <span className="product-spec-value">
+                        <span className="ref-badge">{code}</span>
+                      </span>
+                    </div>
+                    {payments.length > 0 ? (
+                      <div className="product-spec-row">
+                        <span className="product-spec-label">Payment</span>
+                        <span className="product-spec-value">{payments.join(", ")}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                  <p className="muted product-ref-note">
+                    Quote the reference when you message the seller.
+                  </p>
+              </div>
+            </section>
+
+            {product.description ? (
+              <section className="product-mall-row product-mall-desc">
+                <p className="product-mall-row-label">Description</p>
+                <p className="product-desc">{product.description}</p>
+              </section>
+            ) : null}
+          </div>
+
           {seller ? (
             <div className="order-now order-now-inline">
               <Link className="btn btn-clay btn-order" to={orderHref}>
@@ -219,17 +380,50 @@ export function ProductPage() {
           ) : null}
         </div>
       </div>
+
       {seller ? (
-        <div className="product-buy-bar">
-          <div className="product-buy-meta">
-            <span className="product-buy-label">Total</span>
-            <strong className="product-buy-price">{displayPrice(displayAmount)}</strong>
-          </div>
-          <Link className="btn btn-clay product-buy-cta" to={orderHref}>
+        <div className="product-buy-bar product-mall-bar">
+          <Link className="product-bar-icon" to={`/shop/${seller.slug}`}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span>Shop</span>
+          </Link>
+          {seller.whatsapp ? (
+            <a
+              className="product-bar-icon"
+              href={whatsappLink(seller.whatsapp, whatsappMessage)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M7 9h10M7 13h6"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-4 2V7a2 2 0 0 1 2-2z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span>Chat</span>
+            </a>
+          ) : null}
+          <Link className="btn btn-clay product-bar-order" to={orderHref}>
             Order now
           </Link>
         </div>
       ) : null}
+
       {zoomed && current ? (
         <div
           className="zoom-overlay"
