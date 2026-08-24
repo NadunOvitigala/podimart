@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, displayPrice, formatPrice, mediaUrl, productCode } from "../api";
-import { Breadcrumb } from "../components/Breadcrumb";
 import { LoadingGrid } from "../components/LoadingGrid";
 import type { Product, Seller } from "../types";
 
@@ -31,6 +30,7 @@ export function OrderPage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
+  const [contactOpen, setContactOpen] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
@@ -65,22 +65,23 @@ export function OrderPage() {
   const deliveryCharge = product?.delivery_charge ?? 0;
   const deliveryNote = product?.delivery_note?.trim() || "";
 
+  const priceOnRequest = !unitPrice || unitPrice <= 0;
+
   const itemsTotalLabel = useMemo(() => {
     if (!product) return "—";
-    if (!unitPrice || unitPrice <= 0) return "Contact for price";
+    if (priceOnRequest) return "Contact for price";
     return formatPrice(unitPrice * quantity);
-  }, [product, quantity, unitPrice]);
+  }, [product, quantity, unitPrice, priceOnRequest]);
 
   const deliveryLabel = deliveryCharge > 0 ? formatPrice(deliveryCharge) : "Free";
 
   const grandTotalLabel = useMemo(() => {
     if (!product) return "—";
-    if (!unitPrice || unitPrice <= 0) {
-      if (deliveryCharge > 0) return `${formatPrice(deliveryCharge)} delivery · contact for item price`;
-      return "Contact for price";
-    }
+    if (priceOnRequest) return "Contact for price";
     return formatPrice(unitPrice * quantity + deliveryCharge);
-  }, [product, quantity, unitPrice, deliveryCharge]);
+  }, [product, quantity, unitPrice, deliveryCharge, priceOnRequest]);
+
+  const contactSummary = [name.trim(), phone.trim()].filter(Boolean).join(" · ") || "Add your details";
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -92,6 +93,11 @@ export function OrderPage() {
     }
     if (!paymentMethod) {
       setError("Please choose a payment method.");
+      return;
+    }
+    if (!name.trim() || !phone.trim()) {
+      setContactOpen(true);
+      setError("Please add your name and WhatsApp / phone.");
       return;
     }
     setSending(true);
@@ -166,22 +172,155 @@ export function OrderPage() {
   const photo = product.image_url || product.image_urls?.[0] || "";
 
   return (
-    <div className="wrap page-top checkout-page">
-      <Breadcrumb
-        items={[
-          { label: "Marketplace", to: "/browse" },
-          { label: product.name, to: `/product/${product.id}` },
-          { label: "Place order" },
-        ]}
-      />
-      <h1 className="checkout-title">Place order</h1>
+    <div className="checkout-page checkout-daraz">
+      <div className="checkout-topbar">
+        <button
+          type="button"
+          className="checkout-back"
+          aria-label="Back to product"
+          onClick={() => navigate(`/product/${product.id}`)}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M15 6l-6 6 6 6"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        <h1>Checkout</h1>
+      </div>
+
       <form id="checkout-form" className="checkout-layout" onSubmit={onSubmit}>
         <div className="checkout-main">
+          <section className="checkout-card checkout-delivery">
+            <div className="checkout-card-head">
+              <h2>Delivery</h2>
+              {seller ? (
+                <Link className="checkout-head-link" to={`/shop/${seller.slug}`}>
+                  Seller shop ›
+                </Link>
+              ) : null}
+            </div>
+            <div className="checkout-delivery-card is-selected">
+              <div className="checkout-delivery-top">
+                <strong>Standard</strong>
+                <span>{deliveryLabel}</span>
+              </div>
+              <p className="checkout-delivery-line">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M3 7h11v10H3V7zm11 3h4l3 3v4h-7V10z"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span>
+                  {product.city}
+                  {product.lead_time ? ` · ${product.lead_time}` : ""}
+                  {deliveryNote ? ` · ${deliveryNote}` : ""}
+                </span>
+              </p>
+            </div>
+          </section>
+
+          <section className="checkout-card">
+            <div className="checkout-card-head">
+              <h2>Select payment method</h2>
+            </div>
+            <div className="checkout-pay-scroll">
+              {allowedMethods.map((method) => {
+                const selected = paymentMethod === method;
+                return (
+                  <label
+                    key={method}
+                    className={selected ? "checkout-pay-card is-selected" : "checkout-pay-card"}
+                  >
+                    <input
+                      type="radio"
+                      name="payment_method"
+                      value={method}
+                      checked={selected}
+                      onChange={() => setPaymentMethod(method)}
+                      required
+                    />
+                    <strong>{PAYMENT_LABELS[method] || method}</strong>
+                    <span>{PAYMENT_HINTS[method] || ""}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="checkout-card checkout-contact-card">
+            <button
+              type="button"
+              className="checkout-contact-toggle"
+              onClick={() => setContactOpen((open) => !open)}
+              aria-expanded={contactOpen}
+            >
+              <span className="checkout-contact-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M7 4h10a2 2 0 0 1 2 2v12l-3-2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              <span className="checkout-contact-copy">
+                <strong>Contact info</strong>
+                <span className="muted">{contactSummary}</span>
+              </span>
+              <span className={contactOpen ? "checkout-chevron is-open" : "checkout-chevron"}>
+                ›
+              </span>
+            </button>
+            {contactOpen ? (
+              <div className="checkout-fields">
+                <label>
+                  Your name
+                  <input value={name} onChange={(e) => setName(e.target.value)} required />
+                </label>
+                <label>
+                  WhatsApp / phone
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="0771234567"
+                    required
+                  />
+                </label>
+                <label>
+                  Email
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Optional"
+                  />
+                </label>
+                <label className="checkout-note">
+                  Note to seller
+                  <textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Pickup, flavour, date needed…"
+                  />
+                </label>
+              </div>
+            ) : null}
+          </section>
+
           <section className="checkout-card">
             <div className="checkout-card-head">
               <h2>Order items</h2>
               {seller ? (
-                <Link className="text-link" to={`/shop/${seller.slug}`}>
+                <Link className="checkout-head-link" to={`/shop/${seller.slug}`}>
                   {seller.name}
                 </Link>
               ) : null}
@@ -261,80 +400,9 @@ export function OrderPage() {
               </div>
             </div>
           </section>
-
-          <section className="checkout-card">
-            <div className="checkout-card-head">
-              <h2>Contact details</h2>
-            </div>
-            <div className="checkout-fields">
-              <label>
-                Your name
-                <input value={name} onChange={(e) => setName(e.target.value)} required />
-              </label>
-              <label>
-                WhatsApp / phone
-                <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="0771234567"
-                  required
-                />
-              </label>
-              <label>
-                Email
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Optional"
-                />
-              </label>
-              <label className="checkout-note">
-                Note to seller
-                <textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="Pickup, flavour, date needed…"
-                />
-              </label>
-            </div>
-          </section>
         </div>
 
         <aside className="checkout-side">
-          <section className="checkout-card">
-            <div className="checkout-card-head">
-              <h2>Select payment method</h2>
-            </div>
-            <div className="checkout-payments">
-              {allowedMethods.map((method) => {
-                const selected = paymentMethod === method;
-                return (
-                  <label
-                    key={method}
-                    className={selected ? "checkout-pay-option is-selected" : "checkout-pay-option"}
-                  >
-                    <input
-                      type="radio"
-                      name="payment_method"
-                      value={method}
-                      checked={selected}
-                      onChange={() => setPaymentMethod(method)}
-                      required
-                    />
-                    <span className="checkout-pay-copy">
-                      <strong>{PAYMENT_LABELS[method] || method}</strong>
-                      <span className="muted">{PAYMENT_HINTS[method] || ""}</span>
-                    </span>
-                    <span className="checkout-pay-check" aria-hidden="true">
-                      {selected ? "✓" : ""}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </section>
-
           <section className="checkout-card checkout-summary">
             <div className="checkout-card-head">
               <h2>Order summary</h2>
@@ -342,12 +410,12 @@ export function OrderPage() {
             <dl className="checkout-totals">
               <div>
                 <dt>
-                  Items ({quantity} {quantity === 1 ? "item" : "items"})
+                  Merchandise subtotal ({quantity} {quantity === 1 ? "item" : "items"})
                 </dt>
                 <dd>{itemsTotalLabel}</dd>
               </div>
               <div>
-                <dt>Delivery</dt>
+                <dt>Shipping fee</dt>
                 <dd>
                   {deliveryLabel}
                   {deliveryNote ? (
@@ -355,11 +423,16 @@ export function OrderPage() {
                   ) : null}
                 </dd>
               </div>
-              <div className="checkout-grand">
+              <div className={priceOnRequest ? "checkout-grand is-quote" : "checkout-grand"}>
                 <dt>Total</dt>
                 <dd>{grandTotalLabel}</dd>
               </div>
             </dl>
+            {priceOnRequest ? (
+              <p className="muted checkout-quote-note">
+                Shipping is shown above. The seller will confirm the item price with you.
+              </p>
+            ) : null}
             {error ? <p className="error">{error}</p> : null}
             <button className="btn btn-clay checkout-submit" type="submit" disabled={sending || !seller}>
               {sending ? "Placing order…" : "Place order"}
@@ -381,7 +454,7 @@ export function OrderPage() {
       <div className="checkout-mobile-bar">
         <div className="checkout-mobile-total">
           <span className="checkout-mobile-label">Total</span>
-          <strong>{grandTotalLabel}</strong>
+          <strong className={priceOnRequest ? "is-quote" : undefined}>{grandTotalLabel}</strong>
         </div>
         <button
           className="btn btn-clay checkout-mobile-submit"

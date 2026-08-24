@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { api } from "../api";
+import { useProductActions } from "../productActions";
 import { SELLERCENTER_URL } from "../sites";
 import type { Category } from "../types";
 import { HeaderSearch } from "./HeaderSearch";
@@ -9,6 +10,7 @@ export function Layout() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const { actions: productActions } = useProductActions();
   const activeCategory = new URLSearchParams(location.search).get("category");
 
   useEffect(() => {
@@ -39,14 +41,46 @@ export function Layout() {
   const sellerLoginUrl = `${SELLERCENTER_URL}/login`;
   const sellerSignupUrl = `${SELLERCENTER_URL}/signup`;
 
-  const menuLinks = (
+  const productMenu = productActions ? (
     <>
+      <p className="nav-owner-label">This product</p>
+      <Link className="nav-quiet" to={productActions.shopHref} onClick={closeMenu}>
+        Shop · {productActions.shopLabel}
+      </Link>
+      {productActions.chatHref ? (
+        <a
+          className="nav-quiet"
+          href={productActions.chatHref}
+          target="_blank"
+          rel="noreferrer"
+          onClick={closeMenu}
+        >
+          Chat on WhatsApp
+        </a>
+      ) : null}
+      <Link className="btn btn-clay nav-cta" to={productActions.orderHref} onClick={closeMenu}>
+        Order now
+      </Link>
+    </>
+  ) : null;
+
+  const siteMenuLinks = (
+    <>
+      <p className="nav-owner-label">Browse</p>
+      <NavLink
+        to="/"
+        end
+        className={({ isActive }) => (isActive ? "nav-quiet active" : "nav-quiet")}
+        onClick={closeMenu}
+      >
+        Home
+      </NavLink>
       <NavLink
         to="/browse"
         className={({ isActive }) => (isActive ? "nav-quiet active" : "nav-quiet")}
         onClick={closeMenu}
       >
-        Browse marketplace
+        Categories
       </NavLink>
       <NavLink
         to="/about"
@@ -67,8 +101,8 @@ export function Layout() {
         Log in
       </a>
       <a className="btn btn-clay nav-cta" href={sellerSignupUrl} onClick={closeMenu}>
-        <span className="nav-cta-full">Open a free shop</span>
-        <span className="nav-cta-short">Open a free shop</span>
+        <span className="nav-cta-full">Sell · Open a free shop</span>
+        <span className="nav-cta-short">Sell</span>
       </a>
     </>
   );
@@ -91,7 +125,7 @@ export function Layout() {
           </NavLink>
           <HeaderSearch />
           <nav id="site-nav" className="nav nav-desktop">
-            {menuLinks}
+            {siteMenuLinks}
           </nav>
           <button
             type="button"
@@ -147,61 +181,15 @@ export function Layout() {
             Close
           </button>
         </div>
-        <nav className="more-sheet-nav">{menuLinks}</nav>
+        <nav className="more-sheet-nav">
+          {productMenu}
+          {siteMenuLinks}
+        </nav>
       </div>
 
       <main className="site-main">
         <Outlet />
       </main>
-      <nav className="mobile-tabbar" aria-label="Primary">
-        <NavLink to="/" end className={({ isActive }) => (isActive ? "tabbar-item is-active" : "tabbar-item")}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span>Home</span>
-        </NavLink>
-        <NavLink
-          to="/browse"
-          className={({ isActive }) => (isActive ? "tabbar-item is-active" : "tabbar-item")}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" />
-            <path d="M16 16l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          </svg>
-          <span>Categories</span>
-        </NavLink>
-        <a className="tabbar-item" href={sellerLoginUrl}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M10 7V5a2 2 0 0 1 2-2h7v18h-7a2 2 0 0 1-2-2v-2"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-            <path
-              d="M15 12H3m0 0l3-3m-3 3l3 3"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span>Log in</span>
-        </a>
-        <a className="tabbar-item tabbar-primary" href={sellerSignupUrl}>
-          <span className="tabbar-fab" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-            </svg>
-          </span>
-          <span>Sell</span>
-        </a>
-      </nav>
       <footer className="site-footer">
         <div className="wrap footer-grid">
           <div>

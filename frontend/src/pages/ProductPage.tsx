@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { api, displayPrice, mediaUrl, productCode, whatsappLink } from "../api";
 import { Breadcrumb } from "../components/Breadcrumb";
 import { LoadingGrid } from "../components/LoadingGrid";
+import { useRegisterProductActions } from "../productActions";
 import type { Product, Seller } from "../types";
 
 function listingPhotos(product: Product): string[] {
@@ -88,6 +89,21 @@ export function ProductPage() {
   const whatsappMessage = product
     ? `Hi ${seller?.name || product.seller_name}, I would like to order ${product.name} (Ref ${code}) from podimart.lk. Is it available?`
     : "";
+  const chatHref =
+    seller?.whatsapp && product
+      ? whatsappLink(seller.whatsapp, whatsappMessage)
+      : undefined;
+
+  useRegisterProductActions(
+    product && seller
+      ? {
+          shopHref: `/shop/${seller.slug}`,
+          shopLabel: product.seller_name || seller.name,
+          chatHref,
+          orderHref,
+        }
+      : null,
+  );
 
   useEffect(() => {
     if (!zoomed) return;
@@ -263,6 +279,21 @@ export function ProductPage() {
             </div>
           </div>
 
+          <div className="product-delivery-strip">
+            <div className="product-delivery-strip-copy">
+              <span className="product-delivery-city">{product.city}</span>
+              <span className="product-delivery-meta">
+                {product.lead_time || "Standard delivery"}
+                {product.delivery_note ? ` · ${product.delivery_note}` : ""}
+              </span>
+            </div>
+            <strong className="product-delivery-fee">
+              {(product.delivery_charge ?? 0) > 0
+                ? displayPrice(product.delivery_charge ?? 0)
+                : "Free"}
+            </strong>
+          </div>
+
           <div className="product-mall-rows">
             {variants.length > 0 ? (
               <section className="product-mall-row product-mall-row-options">
@@ -392,15 +423,10 @@ export function ProductPage() {
                 strokeLinejoin="round"
               />
             </svg>
-            <span>Shop</span>
+            <span>Store</span>
           </Link>
-          {seller.whatsapp ? (
-            <a
-              className="product-bar-icon"
-              href={whatsappLink(seller.whatsapp, whatsappMessage)}
-              target="_blank"
-              rel="noreferrer"
-            >
+          {chatHref ? (
+            <a className="product-bar-icon" href={chatHref} target="_blank" rel="noreferrer">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path
                   d="M7 9h10M7 13h6"
@@ -417,7 +443,19 @@ export function ProductPage() {
               </svg>
               <span>Chat</span>
             </a>
-          ) : null}
+          ) : (
+            <span className="product-bar-icon is-disabled" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-4 2V7a2 2 0 0 1 2-2z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span>Chat</span>
+            </span>
+          )}
           <Link className="btn btn-clay product-bar-order" to={orderHref}>
             Order now
           </Link>

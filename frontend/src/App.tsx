@@ -8,23 +8,26 @@ import { HomePage } from "./pages/HomePage";
 import { OrderPage } from "./pages/OrderPage";
 import { ProductPage } from "./pages/ProductPage";
 import { ShopPage } from "./pages/ShopPage";
+import { ProductActionsProvider } from "./productActions";
 
 export default function App() {
   return (
     <BrowserRouter>
-      <ScrollToTop />
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/browse" element={<BrowsePage />} />
-          <Route path="/shop/:slug" element={<ShopPage />} />
-          <Route path="/product/:id" element={<ProductPage />} />
-          <Route path="/order/:id" element={<OrderPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
+      <ProductActionsProvider>
+        <ScrollToTop />
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/browse" element={<BrowsePage />} />
+            <Route path="/shop/:slug" element={<ShopPage />} />
+            <Route path="/product/:id" element={<ProductPage />} />
+            <Route path="/order/:id" element={<OrderPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </ProductActionsProvider>
     </BrowserRouter>
   );
 }
