@@ -1,4 +1,4 @@
-import type { AdminProduct, AdminSeller, AdminUser } from "./types";
+import type { AdminOrder, AdminProduct, AdminSeller, AdminStats, AdminUser } from "./types";
 
 const API = import.meta.env.VITE_API_URL || "/api";
 const TOKEN_KEY = "podimart_admin_token";
@@ -71,6 +71,8 @@ export const api = {
     request<{ ok: boolean }>(`/admin/users/${encodeURIComponent(email)}`, {
       method: "DELETE",
     }),
+  adminOrders: () => request<AdminOrder[]>("/admin/orders"),
+  adminStats: () => request<AdminStats>("/admin/stats"),
 };
 
 export function formatPrice(value: number): string {

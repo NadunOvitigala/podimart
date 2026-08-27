@@ -101,8 +101,8 @@ export function Layout() {
         Log in
       </a>
       <a className="btn btn-clay nav-cta" href={sellerSignupUrl} onClick={closeMenu}>
-        <span className="nav-cta-full">Sell · Open a free shop</span>
-        <span className="nav-cta-short">Sell</span>
+        <span className="nav-cta-full">Open a free shop</span>
+        <span className="nav-cta-short">Open shop</span>
       </a>
     </>
   );

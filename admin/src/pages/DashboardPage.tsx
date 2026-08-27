@@ -1,34 +1,90 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { api, formatPrice, mediaUrl } from "../api";
 import { useAuth } from "../auth";
-import type { AdminProduct, AdminSeller, AdminUser } from "../types";
+import type { AdminOrder, AdminProduct, AdminSeller, AdminUser } from "../types";
 import { PUBLIC_URL } from "../sites";
 
-type Tab = "shops" | "listings" | "users";
+type Tab = "overview" | "shops" | "listings" | "users" | "orders";
+type DatePreset = "today" | "7d" | "month" | "all" | "custom";
+
+function toDateInput(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function dateKey(iso?: string): string {
+  if (!iso) return "";
+  return iso.slice(0, 10);
+}
+
+function inDateRange(iso: string | undefined, from: string, to: string): boolean {
+  const key = dateKey(iso);
+  if (!key) return false;
+  if (from && key < from) return false;
+  if (to && key > to) return false;
+  return true;
+}
+
+function formatDisplayDate(iso?: string): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso.slice(0, 10);
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function rangeLabel(from: string, to: string, preset: DatePreset): string {
+  if (preset === "all" || (!from && !to)) return "All time";
+  if (from === to) return formatDisplayDate(from);
+  return `${formatDisplayDate(from)} – ${formatDisplayDate(to)}`;
+}
+
+function getPresetRange(preset: DatePreset): { from: string; to: string } {
+  const today = new Date();
+  const to = toDateInput(today);
+  if (preset === "today") return { from: to, to };
+  if (preset === "7d") {
+    const start = new Date(today);
+    start.setDate(start.getDate() - 6);
+    return { from: toDateInput(start), to };
+  }
+  if (preset === "month") {
+    const start = new Date(today.getFullYear(), today.getMonth(), 1);
+    return { from: toDateInput(start), to };
+  }
+  return { from: "", to: "" };
+}
 
 export function DashboardPage() {
   const { token, logout } = useAuth();
-  const [tab, setTab] = useState<Tab>("shops");
+  const [tab, setTab] = useState<Tab>("overview");
   const [sellers, setSellers] = useState<AdminSeller[]>([]);
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [grantEmail, setGrantEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState("");
+  const monthRange = getPresetRange("month");
+  const [datePreset, setDatePreset] = useState<DatePreset>("month");
+  const [fromDate, setFromDate] = useState(monthRange.from);
+  const [toDate, setToDate] = useState(monthRange.to);
 
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
     setLoading(true);
     setError("");
-    Promise.all([api.adminMe(), api.adminSellers(), api.adminProducts(), api.adminUsers()])
-      .then(([, nextSellers, nextProducts, nextUsers]) => {
+    Promise.all([api.adminMe(), api.adminSellers(), api.adminProducts(), api.adminUsers(), api.adminOrders()])
+      .then(([, nextSellers, nextProducts, nextUsers, nextOrders]) => {
         if (cancelled) return;
         setSellers(nextSellers);
         setProducts(nextProducts);
         setUsers(nextUsers);
+        setOrders(nextOrders);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -46,17 +102,61 @@ export function DashboardPage() {
     };
   }, [token, logout]);
 
+  const summary = useMemo(() => {
+    const from = datePreset === "all" ? "" : fromDate;
+    const to = datePreset === "all" ? "" : toDate;
+    const filteredOrders = orders.filter((o) =>
+      datePreset === "all" ? true : inDateRange(o.created_at, from, to),
+    );
+    const filteredShops = sellers.filter((s) =>
+      datePreset === "all" ? true : inDateRange(s.created_at, from, to),
+    );
+    const filteredProducts = products.filter((p) =>
+      datePreset === "all" ? true : inDateRange(p.created_at, from, to),
+    );
+    const revenue = filteredOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const quoteOrders = filteredOrders.filter((o) => !(Number(o.total) > 0)).length;
+    return {
+      orders: filteredOrders.length,
+      revenue,
+      quoteOrders,
+      shops: filteredShops.length,
+      products: filteredProducts.length,
+      recent: filteredOrders.slice(0, 12),
+      label: rangeLabel(from, to, datePreset),
+    };
+  }, [orders, sellers, products, datePreset, fromDate, toDate]);
+
   if (!token) return <Navigate to="/login" replace />;
 
   async function reload() {
-    const [nextSellers, nextProducts, nextUsers] = await Promise.all([
+    const [nextSellers, nextProducts, nextUsers, nextOrders] = await Promise.all([
       api.adminSellers(),
       api.adminProducts(),
       api.adminUsers(),
+      api.adminOrders(),
     ]);
     setSellers(nextSellers);
     setProducts(nextProducts);
     setUsers(nextUsers);
+    setOrders(nextOrders);
+  }
+
+  function applyPreset(preset: DatePreset) {
+    setDatePreset(preset);
+    const range = getPresetRange(preset);
+    setFromDate(range.from);
+    setToDate(range.to);
+  }
+
+  function onFromChange(value: string) {
+    setDatePreset("custom");
+    setFromDate(value);
+  }
+
+  function onToChange(value: string) {
+    setDatePreset("custom");
+    setToDate(value);
   }
 
   async function deleteSeller(id: string, name: string) {
@@ -153,7 +253,7 @@ export function DashboardPage() {
       <div className="admin-head">
         <div>
           <h1>Marketplace admin</h1>
-          <p className="lede">Manage shops, listings, and users across podimart.lk.</p>
+          <p className="lede">Platform overview, orders, shops, and users for podimart.lk.</p>
         </div>
         <div className="admin-stats">
           <div className="stat-card">
@@ -180,6 +280,20 @@ export function DashboardPage() {
       <div className="admin-tabs">
         <button
           type="button"
+          className={tab === "overview" ? "admin-tab is-active" : "admin-tab"}
+          onClick={() => setTab("overview")}
+        >
+          Overview
+        </button>
+        <button
+          type="button"
+          className={tab === "orders" ? "admin-tab is-active" : "admin-tab"}
+          onClick={() => setTab("orders")}
+        >
+          Orders ({orders.length})
+        </button>
+        <button
+          type="button"
           className={tab === "shops" ? "admin-tab is-active" : "admin-tab"}
           onClick={() => setTab("shops")}
         >
@@ -203,6 +317,206 @@ export function DashboardPage() {
 
       {loading ? (
         <p className="muted">Loading…</p>
+      ) : tab === "overview" ? (
+        <div className="overview-page">
+          <div className="date-filter-bar">
+            <div className="date-filter-left">
+              <span className="date-filter-title">Summary period</span>
+              <div className="date-presets">
+                {(
+                  [
+                    ["today", "Today"],
+                    ["7d", "Last 7 days"],
+                    ["month", "This month"],
+                    ["all", "All time"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={datePreset === key ? "date-preset is-active" : "date-preset"}
+                    onClick={() => applyPreset(key)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="date-filter-right">
+              <label className="date-field">
+                <span>From</span>
+                <input
+                  type="date"
+                  value={fromDate}
+                  max={toDate || undefined}
+                  onChange={(e) => onFromChange(e.target.value)}
+                  disabled={datePreset === "all"}
+                />
+              </label>
+              <label className="date-field">
+                <span>To</span>
+                <input
+                  type="date"
+                  value={toDate}
+                  min={fromDate || undefined}
+                  onChange={(e) => onToChange(e.target.value)}
+                  disabled={datePreset === "all"}
+                />
+              </label>
+            </div>
+          </div>
+
+          <p className="overview-range-note">
+            Showing metrics for <strong>{summary.label}</strong>
+          </p>
+
+          <div className="overview-metrics">
+            <div className="metric-card metric-primary">
+              <span className="metric-label">Orders</span>
+              <strong className="metric-value">{summary.orders}</strong>
+              <span className="metric-hint">
+                {summary.quoteOrders > 0
+                  ? `${summary.quoteOrders} contact-for-price`
+                  : "Placed in selected period"}
+              </span>
+            </div>
+            <div className="metric-card metric-revenue">
+              <span className="metric-label">Revenue</span>
+              <strong className="metric-value">{formatPrice(summary.revenue)}</strong>
+              <span className="metric-hint">Priced orders only</span>
+            </div>
+            <div className="metric-card">
+              <span className="metric-label">New shops</span>
+              <strong className="metric-value">{summary.shops}</strong>
+              <span className="metric-hint">{sellers.length} total shops</span>
+            </div>
+            <div className="metric-card">
+              <span className="metric-label">New listings</span>
+              <strong className="metric-value">{summary.products}</strong>
+              <span className="metric-hint">{products.length} total listings</span>
+            </div>
+          </div>
+
+          <div className="overview-panel">
+            <div className="overview-panel-head">
+              <div>
+                <h2>Orders in period</h2>
+                <p>{summary.recent.length === 0 ? "No orders in this date range." : `${summary.orders} order${summary.orders === 1 ? "" : "s"} matched`}</p>
+              </div>
+              {orders.length > 0 ? (
+                <button type="button" className="btn btn-outline btn-sm" onClick={() => setTab("orders")}>
+                  View all orders
+                </button>
+              ) : null}
+            </div>
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Ref</th>
+                    <th>Product</th>
+                    <th>Shop</th>
+                    <th>Buyer</th>
+                    <th>Total</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summary.recent.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="empty-cell">
+                        No orders for {summary.label}.
+                      </td>
+                    </tr>
+                  ) : (
+                    summary.recent.map((order) => (
+                      <tr key={order.id}>
+                        <td>
+                          <strong>{order.reference}</strong>
+                          <div className="cell-sub">
+                            <span
+                              className={
+                                order.status === "pending" ? "status-pill pending" : "status-pill active"
+                              }
+                            >
+                              {order.status || "pending"}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          {order.product_name}
+                          {order.variant_label ? <div className="cell-sub">{order.variant_label}</div> : null}
+                        </td>
+                        <td>{order.seller_name}</td>
+                        <td>
+                          {order.buyer_name}
+                          <div className="cell-sub">{order.buyer_phone}</div>
+                        </td>
+                        <td className="metric-money">
+                          {order.total > 0 ? formatPrice(order.total) : order.total_label}
+                        </td>
+                        <td>{formatDisplayDate(order.created_at)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : tab === "orders" ? (
+        <div className="admin-panel">
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Ref</th>
+                  <th>Product</th>
+                  <th>Shop</th>
+                  <th>Buyer</th>
+                  <th>Payment</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="empty-cell">No orders yet.</td>
+                  </tr>
+                ) : (
+                  orders.map((order) => (
+                    <tr key={order.id}>
+                      <td><strong>{order.reference}</strong></td>
+                      <td>
+                        {order.product_name}
+                        {order.variant_label ? <div className="cell-sub">{order.variant_label}</div> : null}
+                        <div className="cell-sub">{order.product_code}</div>
+                      </td>
+                      <td>{order.seller_name}</td>
+                      <td>
+                        {order.buyer_name}
+                        <div className="cell-sub">{order.buyer_phone}</div>
+                        {order.buyer_email ? <div className="cell-sub">{order.buyer_email}</div> : null}
+                      </td>
+                      <td>{order.payment_method_label}</td>
+                      <td>{order.total > 0 ? formatPrice(order.total) : order.total_label}</td>
+                      <td>
+                        <span className={order.status === "pending" ? "status-pill pending" : "status-pill active"}>
+                          {order.status || "pending"}
+                        </span>
+                      </td>
+                      <td>
+                        {order.created_at ? formatDisplayDate(order.created_at) : "—"}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : tab === "shops" ? (
         <div className="admin-panel">
           <div className="admin-table-wrap">
