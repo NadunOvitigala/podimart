@@ -2437,6 +2437,11 @@ textarea {
   padding: 2px 8px;
   font-size: 12px;
   font-weight: 600;
+  text-decoration: none;
+}
+
+a.chip:hover {
+  color: var(--clay-dark);
 }
 
 .shop-hero,
@@ -3963,4 +3968,54 @@ textarea {
   .shop-cover.has-photo .shop-cover-inner {
     padding: 48px 0 20px;
   }
+}
+
+.card-fulfillment {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.checkout-email-hint {
+  margin: -4px 0 8px;
+  font-size: 12px;
+}
+
+.product-report {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.product-report-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.product-report-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.product-report-form input,
+.product-report-form textarea {
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.product-report-toggle {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
 }

@@ -80,7 +80,7 @@ export function Layout() {
         className={({ isActive }) => (isActive ? "nav-quiet active" : "nav-quiet")}
         onClick={closeMenu}
       >
-        Categories
+        Marketplace
       </NavLink>
       <NavLink
         to="/about"

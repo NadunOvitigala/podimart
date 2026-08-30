@@ -4,7 +4,7 @@ import { api, displayPrice, mediaUrl, productCode, whatsappLink } from "../api";
 import { Breadcrumb } from "../components/Breadcrumb";
 import { LoadingGrid } from "../components/LoadingGrid";
 import { useRegisterProductActions } from "../productActions";
-import type { Product, Seller } from "../types";
+import type { Category, Product, Seller } from "../types";
 
 function listingPhotos(product: Product): string[] {
   const urls = (product.image_urls ?? []).filter(Boolean);
@@ -54,12 +54,23 @@ export function ProductPage() {
   const { id = "" } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [seller, setSeller] = useState<Seller | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState("");
   const [active, setActive] = useState(0);
   const [zoomed, setZoomed] = useState(false);
   const [variantId, setVariantId] = useState("");
   const [openRows, setOpenRows] = useState({ options: true, details: true });
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportName, setReportName] = useState("");
+  const [reportEmail, setReportEmail] = useState("");
+  const [reportMsg, setReportMsg] = useState("");
+  const [reportBusy, setReportBusy] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    api.categories().then(setCategories).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     api
@@ -86,6 +97,18 @@ export function ProductPage() {
     ? `/order/${product?.id}?variant=${encodeURIComponent(selectedVariant.id)}`
     : `/order/${product?.id}`;
   const code = product ? productCode(product) : "";
+  const categoryMeta = useMemo(() => {
+    if (!product?.category) return null;
+    const category = categories.find((item) => item.id === product.category);
+    const subcategory = (category?.subcategories || []).find(
+      (item) => item.id === product.subcategory,
+    );
+    return {
+      id: product.category,
+      name: category?.name || product.category,
+      subcategoryName: subcategory?.name || product.subcategory || "",
+    };
+  }, [categories, product]);
   const whatsappMessage = product
     ? `Hi ${seller?.name || product.seller_name}, I would like to order ${product.name} (Ref ${code}) from podimart.lk. Is it available?`
     : "";
@@ -156,6 +179,14 @@ export function ProductPage() {
       <Breadcrumb
         items={[
           { label: "Marketplace", to: "/browse" },
+          ...(categoryMeta
+            ? [
+                {
+                  label: categoryMeta.name,
+                  to: `/browse?category=${encodeURIComponent(categoryMeta.id)}`,
+                },
+              ]
+            : []),
           ...(seller ? [{ label: seller.name, to: `/shop/${seller.slug}` }] : []),
           { label: product.name },
         ]}
@@ -274,6 +305,15 @@ export function ProductPage() {
               </p>
             ) : null}
             <div className="product-mall-tags">
+              {categoryMeta ? (
+                <Link
+                  className="chip"
+                  to={`/browse?category=${encodeURIComponent(categoryMeta.id)}`}
+                >
+                  {categoryMeta.name}
+                  {categoryMeta.subcategoryName ? ` · ${categoryMeta.subcategoryName}` : ""}
+                </Link>
+              ) : null}
               <span className="chip">{product.city}</span>
               <span className="chip product-ref-chip">{code}</span>
             </div>
@@ -283,14 +323,26 @@ export function ProductPage() {
             <div className="product-delivery-strip-copy">
               <span className="product-delivery-city">{product.city}</span>
               <span className="product-delivery-meta">
-                {product.lead_time || "Standard delivery"}
-                {product.delivery_note ? ` · ${product.delivery_note}` : ""}
+                {[
+                  product.offers_pickup !== false ? "Pickup" : null,
+                  product.offers_delivery !== false
+                    ? (product.delivery_charge ?? 0) > 0
+                      ? "Delivery"
+                      : "Delivery available"
+                    : null,
+                  product.lead_time || null,
+                  product.delivery_note || null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </span>
             </div>
             <strong className="product-delivery-fee">
-              {(product.delivery_charge ?? 0) > 0
-                ? displayPrice(product.delivery_charge ?? 0)
-                : "Free"}
+              {product.offers_delivery === false
+                ? "Pickup"
+                : (product.delivery_charge ?? 0) > 0
+                  ? displayPrice(product.delivery_charge ?? 0)
+                  : "Free"}
             </strong>
           </div>
 
@@ -342,12 +394,28 @@ export function ProductPage() {
               >
                 <span className="product-mall-row-label">Details</span>
                 <span className="product-mall-row-value product-mall-row-preview">
-                  {product.lead_time || product.seller_name}
+                  {categoryMeta?.name || product.lead_time || product.seller_name}
                 </span>
                 <Chevron open={openRows.details} />
               </button>
               <div className={`product-mall-row-body ${openRows.details ? "is-open" : ""}`}>
                   <div className="product-spec-list">
+                    {categoryMeta ? (
+                      <div className="product-spec-row">
+                        <span className="product-spec-label">Category</span>
+                        <span className="product-spec-value">
+                          <Link
+                            className="text-link"
+                            to={`/browse?category=${encodeURIComponent(categoryMeta.id)}`}
+                          >
+                            {categoryMeta.name}
+                          </Link>
+                          {categoryMeta.subcategoryName
+                            ? ` · ${categoryMeta.subcategoryName}`
+                            : ""}
+                        </span>
+                      </div>
+                    ) : null}
                     {product.lead_time ? (
                       <div className="product-spec-row">
                         <span className="product-spec-label">Lead time</span>
@@ -400,6 +468,67 @@ export function ProductPage() {
                 <p className="product-desc">{product.description}</p>
               </section>
             ) : null}
+
+            <section className="product-report">
+              <button
+                type="button"
+                className="product-report-toggle"
+                onClick={() => setReportOpen((open) => !open)}
+              >
+                Report this listing
+              </button>
+              {reportOpen ? (
+                <form
+                  className="product-report-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    if (!product) return;
+                    setReportBusy(true);
+                    setReportMsg("");
+                    api
+                      .reportListing({
+                        product_id: product.id,
+                        reason: reportReason.trim(),
+                        reporter_name: reportName.trim(),
+                        reporter_email: reportEmail.trim(),
+                      })
+                      .then(() => {
+                        setReportReason("");
+                        setReportMsg("Thanks — we received your report.");
+                      })
+                      .catch((err: Error) => setReportMsg(err.message))
+                      .finally(() => setReportBusy(false));
+                  }}
+                >
+                  <label>
+                    Why are you reporting this?
+                    <textarea
+                      value={reportReason}
+                      onChange={(e) => setReportReason(e.target.value)}
+                      required
+                      minLength={5}
+                      rows={3}
+                    />
+                  </label>
+                  <label>
+                    Your name (optional)
+                    <input value={reportName} onChange={(e) => setReportName(e.target.value)} />
+                  </label>
+                  <label>
+                    Your email (optional)
+                    <input
+                      type="email"
+                      value={reportEmail}
+                      onChange={(e) => setReportEmail(e.target.value)}
+                    />
+                  </label>
+                  {reportMsg ? <p className="muted">{reportMsg}</p> : null}
+                  <button className="btn btn-outline" type="submit" disabled={reportBusy}>
+                    {reportBusy ? "Sending…" : "Submit report"}
+                  </button>
+                </form>
+              ) : null}
+            </section>
           </div>
 
           {seller ? (

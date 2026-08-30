@@ -246,7 +246,37 @@ export function DashboardPage() {
     }
   }
 
+  async function confirmPendingUsers() {
+    setBusyId("confirm-pending");
+    setError("");
+    try {
+      const result = await api.confirmPendingUsers();
+      await reload();
+      if (result.count === 0) {
+        setError("No unconfirmed users to approve.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not confirm users.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function confirmUser(email: string) {
+    setBusyId(`confirm:${email}`);
+    setError("");
+    try {
+      await api.confirmUser(email);
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not confirm user.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
   const adminCount = users.filter((user) => user.is_admin).length;
+  const pendingCount = users.filter((user) => (user.status || "").toUpperCase() === "UNCONFIRMED").length;
 
   return (
     <div className="wrap admin-page">
@@ -659,6 +689,21 @@ export function DashboardPage() {
           <p className="notice">
             Users need a Seller Center account first. They log in here with the same email and password.
           </p>
+          {pendingCount > 0 ? (
+            <div className="admin-grant">
+              <p className="notice">
+                {pendingCount} user{pendingCount === 1 ? "" : "s"} still unconfirmed from the old email-code flow.
+              </p>
+              <button
+                type="button"
+                className="btn btn-clay"
+                disabled={busyId === "confirm-pending"}
+                onClick={() => void confirmPendingUsers()}
+              >
+                {busyId === "confirm-pending" ? "Confirming…" : `Confirm all pending (${pendingCount})`}
+              </button>
+            </div>
+          ) : null}
           <div className="admin-table-wrap">
             <table className="admin-table">
               <thead>
@@ -706,6 +751,16 @@ export function DashboardPage() {
                       </td>
                       <td>
                         <div className="action-group">
+                          {(user.status || "").toUpperCase() === "UNCONFIRMED" ? (
+                            <button
+                              type="button"
+                              className="btn btn-clay btn-sm"
+                              disabled={busyId === `confirm:${user.email}`}
+                              onClick={() => void confirmUser(user.email)}
+                            >
+                              Confirm
+                            </button>
+                          ) : null}
                           {user.is_admin ? (
                             <button
                               type="button"

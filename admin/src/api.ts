@@ -71,6 +71,14 @@ export const api = {
     request<{ ok: boolean }>(`/admin/users/${encodeURIComponent(email)}`, {
       method: "DELETE",
     }),
+  confirmPendingUsers: () =>
+    request<{ ok: boolean; confirmed: string[]; count: number }>("/admin/users/confirm-pending", {
+      method: "POST",
+    }),
+  confirmUser: (email: string) =>
+    request<{ ok: boolean; email: string }>(`/admin/users/${encodeURIComponent(email)}/confirm`, {
+      method: "POST",
+    }),
   adminOrders: () => request<AdminOrder[]>("/admin/orders"),
   adminStats: () => request<AdminStats>("/admin/stats"),
 };

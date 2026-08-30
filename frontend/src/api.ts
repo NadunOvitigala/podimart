@@ -55,7 +55,7 @@ export const api = {
     variant_id?: string;
     buyer_name: string;
     buyer_phone: string;
-    buyer_email?: string;
+    buyer_email: string;
     note?: string;
   }) =>
     request<{
@@ -70,6 +70,12 @@ export const api = {
       };
       notified: { email: boolean; whatsapp: boolean };
     }>("/orders", { method: "POST", body: JSON.stringify(body) }),
+  reportListing: (body: {
+    product_id: string;
+    reason: string;
+    reporter_name?: string;
+    reporter_email?: string;
+  }) => request<{ ok: boolean }>("/reports", { method: "POST", body: JSON.stringify(body) }),
 };
 
 export function formatPrice(value: number): string {

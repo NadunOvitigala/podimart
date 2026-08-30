@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+Disallow: /order/
+
+Sitemap: https://podimart.lk/sitemap.xml

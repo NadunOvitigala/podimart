@@ -27,6 +27,15 @@ export type ProductVariant = {
   price: number;
 };
 
+export type ProductReview = {
+  id: string;
+  rating: number;
+  comment: string;
+  author_name: string;
+  order_reference?: string;
+  created_at: string;
+};
+
 export type Product = {
   id: string;
   seller_id: string;
@@ -34,12 +43,15 @@ export type Product = {
   seller_name: string;
   city: string;
   category: string;
+  subcategory?: string;
   name: string;
   description: string;
   price: number;
   lead_time: string;
   delivery_charge?: number;
   delivery_note?: string;
+  offers_pickup?: boolean;
+  offers_delivery?: boolean;
   image_url: string;
   image_urls?: string[];
   video_urls?: string[];
@@ -48,5 +60,8 @@ export type Product = {
   variation_type?: string;
   variation_type_label?: string;
   variants?: ProductVariant[];
+  reviews?: ProductReview[];
+  rating_avg?: number;
+  rating_count?: number;
   created_at: string;
 };

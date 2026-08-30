@@ -100,6 +100,11 @@ export function OrderPage() {
       setError("Please add your name and WhatsApp / phone.");
       return;
     }
+    if (!email.trim() || !email.includes("@")) {
+      setContactOpen(true);
+      setError("Please add your email so you can receive order updates.");
+      return;
+    }
     setSending(true);
     try {
       const result = await api.createOrder({
@@ -301,9 +306,13 @@ export function OrderPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Optional"
+                    placeholder="you@email.com"
+                    required
                   />
                 </label>
+                <p className="muted checkout-email-hint">
+                  Required — used for order confirmation and updates from the seller.
+                </p>
                 <label className="checkout-note">
                   Note to seller
                   <textarea
